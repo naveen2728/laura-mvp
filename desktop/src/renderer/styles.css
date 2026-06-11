@@ -201,14 +201,20 @@ select:focus {
   gap: 8px;
   justify-content: space-between;
   margin-bottom: 10px;
+  min-width: 0;
 }
 
 .section-title span {
   color: var(--soft);
+  display: block;
   font-size: 12px;
   font-weight: 900;
   letter-spacing: 0.03em;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .button-row {
@@ -250,6 +256,12 @@ select:focus {
 
 .tasks-section {
   flex: 1;
+  overflow: hidden;
+}
+
+.tasks-section .stack-list {
+  max-height: 34vh;
+  overflow: auto;
 }
 
 .item,
@@ -273,6 +285,7 @@ select:focus {
   display: flex;
   gap: 8px;
   justify-content: space-between;
+  min-width: 0;
 }
 
 .item h3,
@@ -288,6 +301,10 @@ select:focus {
   color: var(--ink);
   font-size: 14px;
   line-height: 1.25;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .item p,

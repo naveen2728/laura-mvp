@@ -249,7 +249,7 @@ function renderProjects() {
 
 function renderTasks() {
   const project = state.projects.find((item) => item.id === state.selectedProjectId);
-  el.taskTitle.textContent = project ? `Tasks: ${project.name}` : "Tasks";
+  el.taskTitle.textContent = project ? project.name : "Tasks";
   el.taskList.innerHTML = "";
   if (!project) return;
   if (!state.tasks.length) {
