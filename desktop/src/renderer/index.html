@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Laura Desktop</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">L</div>
+        <div>
+          <h1>Laura</h1>
+          <p>Desktop Studio</p>
+        </div>
+      </div>
+
+      <nav class="nav">
+        <button class="nav-item active" data-view="workspace">Workspace</button>
+        <button class="nav-item" data-view="studio">Models</button>
+        <button class="nav-item" data-view="run">Run</button>
+      </nav>
+
+      <section class="connection">
+        <label>
+          Laura URL
+          <input id="baseUrlInput" type="url" />
+        </label>
+        <label>
+          API key
+          <input id="apiKeyInput" type="password" placeholder="bm_live_..." />
+        </label>
+        <div class="row">
+          <button id="connectButton">Connect</button>
+          <button id="clearButton" class="secondary">Clear</button>
+        </div>
+        <span id="connectionStatus" class="status bad">Disconnected</span>
+      </section>
+    </aside>
+
+    <main class="app">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Agentic orchestration</p>
+          <h2 id="viewTitle">Workspace</h2>
+        </div>
+        <button id="refreshButton" class="secondary">Refresh</button>
+      </header>
+
+      <section id="workspaceView" class="view active">
+        <section class="panel">
+          <div class="panel-header">
+            <h3>Projects</h3>
+            <button id="createProjectButton">Create</button>
+          </div>
+          <div class="form compact">
+            <input id="projectNameInput" placeholder="Project name" />
+            <textarea id="projectDescriptionInput" rows="3" placeholder="Description"></textarea>
+          </div>
+          <div id="projectList" class="list"></div>
+        </section>
+
+        <section class="panel wide">
+          <div class="panel-header">
+            <div>
+              <h3 id="taskTitle">Tasks</h3>
+              <p id="taskSubtitle">Select a project to inspect shared memory.</p>
+            </div>
+            <button id="createTaskButton">Add task</button>
+          </div>
+          <div class="form">
+            <textarea id="taskInstructionsInput" rows="3" placeholder="Instructions for an agent"></textarea>
+            <textarea id="taskContextInput" rows="3" placeholder="Context, constraints, links, files"></textarea>
+          </div>
+          <div id="taskList" class="list"></div>
+        </section>
+      </section>
+
+      <section id="studioView" class="view">
+        <section class="panel">
+          <div class="panel-header">
+            <h3>Model Providers</h3>
+            <button id="addModelButton">Add model</button>
+          </div>
+          <div class="form">
+            <div class="grid-2">
+              <input id="modelDisplayNameInput" placeholder="Kimi K2" />
+              <select id="modelKindInput">
+                <option value="openai-compatible">OpenAI-compatible</option>
+                <option value="openai">OpenAI</option>
+                <option value="anthropic">Anthropic</option>
+                <option value="google">Google</option>
+                <option value="ollama">Ollama</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <input id="modelBaseUrlInput" placeholder="https://openrouter.ai/api/v1" />
+            <div class="grid-2">
+              <input id="modelNameInput" placeholder="moonshotai/kimi-k2" />
+              <input id="modelApiKeyInput" type="password" placeholder="Provider API key" />
+            </div>
+          </div>
+          <div id="modelList" class="list"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <h3>Agents</h3>
+            <button id="addAgentButton">Create agent</button>
+          </div>
+          <div class="form">
+            <div class="grid-2">
+              <input id="agentNameInput" placeholder="Coder" />
+              <input id="agentRoleInput" placeholder="implementation" value="assistant" />
+            </div>
+            <select id="agentModelInput"></select>
+            <textarea id="agentPromptInput" rows="4" placeholder="System prompt"></textarea>
+          </div>
+          <div id="agentList" class="list"></div>
+        </section>
+      </section>
+
+      <section id="runView" class="view">
+        <section class="panel run-card">
+          <div class="panel-header">
+            <div>
+              <h3>Run Agent</h3>
+              <p>Send a prompt with Laura project memory attached.</p>
+            </div>
+          </div>
+          <div class="form">
+            <div class="grid-2">
+              <select id="runProjectInput"></select>
+              <select id="runAgentInput"></select>
+            </div>
+            <textarea id="runPromptInput" rows="7" placeholder="Read Laura memory and tell me what we should build next."></textarea>
+            <button id="runAgentButton">Run agent</button>
+          </div>
+        </section>
+
+        <section class="panel output-card">
+          <div class="panel-header">
+            <h3>Output</h3>
+          </div>
+          <pre id="runOutput">Connect to Laura, configure a model and agent, then run a prompt.</pre>
+        </section>
+      </section>
+    </main>
+
+    <div id="toast" class="toast"></div>
+    <script src="./app.js"></script>
+  </body>
+</html>

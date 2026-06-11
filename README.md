@@ -82,6 +82,24 @@ From there you can:
 - Create tasks and update task status.
 - View API key metadata and revoke active keys.
 
+## Laura Desktop
+
+Laura Desktop is an Electron shell for the hosted Laura backend. It gives you a desktop workspace for projects, shared task memory, model providers, agents, and agent runs.
+
+```powershell
+cd desktop
+npm install
+npm start
+```
+
+Default backend:
+
+```text
+https://web-production-57e37.up.railway.app
+```
+
+Paste your Laura API key in the desktop app and click `Connect`.
+
 ## Deployment
 
 Laura is ready to deploy as a containerized FastAPI app. The included files are:
