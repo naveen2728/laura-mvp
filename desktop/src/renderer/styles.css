@@ -254,6 +254,11 @@ select:focus {
   gap: 8px;
 }
 
+.summary-list {
+  display: grid;
+  gap: 8px;
+}
+
 .sidebar-section {
   min-height: 0;
 }
@@ -463,6 +468,28 @@ select:focus {
   gap: 10px;
 }
 
+.summary-card {
+  flex: 1;
+}
+
+.summary-item {
+  background: var(--surface-2);
+  border: 1px solid rgba(48, 70, 63, 0.7);
+  border-radius: 8px;
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+}
+
+.summary-item strong {
+  font-size: 13px;
+}
+
+.summary-item span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
 pre {
   background: #09100e;
   border: 1px solid var(--line);
@@ -521,6 +548,16 @@ pre {
   width: min(820px, 100%);
 }
 
+.settings-modal {
+  display: grid;
+  gap: 18px;
+  max-height: calc(100vh - 48px);
+  max-width: 1040px;
+  overflow: auto;
+  padding: 22px;
+  width: min(1040px, 100%);
+}
+
 .setup-header,
 .setup-actions {
   align-items: center;
@@ -538,6 +575,16 @@ pre {
   display: grid;
   gap: 12px;
   grid-template-columns: 1fr 1fr;
+}
+
+.settings-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: 1fr 1fr;
+}
+
+.nested-surface {
+  background: rgba(17, 26, 23, 0.72);
 }
 
 .setup-modal label {

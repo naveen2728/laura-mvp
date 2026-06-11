@@ -63,6 +63,10 @@ const el = {
   connectButton: $("#connectButton"),
   clearButton: $("#clearButton"),
   connectionStatus: $("#connectionStatus"),
+  openSettingsButton: $("#openSettingsButton"),
+  closeSettingsButton: $("#closeSettingsButton"),
+  settingsOverlay: $("#settingsOverlay"),
+  configurationSummary: $("#configurationSummary"),
   setupButton: $("#setupButton"),
   setupOverlay: $("#setupOverlay"),
   setupCloseButton: $("#setupCloseButton"),
@@ -160,6 +164,14 @@ function closeSetup() {
   el.setupOverlay.classList.add("hidden");
 }
 
+function openSettings() {
+  el.settingsOverlay.classList.remove("hidden");
+}
+
+function closeSettings() {
+  el.settingsOverlay.classList.add("hidden");
+}
+
 function escapeHtml(value) {
   return String(value ?? "")
     .replaceAll("&", "&amp;")
@@ -216,6 +228,7 @@ async function refreshAll() {
   if (!state.apiKey) {
     connected(false);
     renderThreads();
+    renderConfigurationSummary();
     renderMessages();
     return;
   }
@@ -255,9 +268,23 @@ function render() {
   renderTasks();
   renderModels();
   renderAgents();
+  renderConfigurationSummary();
   renderRunOptions();
   renderMessages();
   renderMemory();
+}
+
+function renderConfigurationSummary() {
+  el.configurationSummary.innerHTML = `
+    <article class="summary-item">
+      <strong>${state.models.length} model${state.models.length === 1 ? "" : "s"}</strong>
+      <span>${state.models.length ? state.models.map((model) => model.name).slice(0, 3).join(", ") : "No providers yet"}</span>
+    </article>
+    <article class="summary-item">
+      <strong>${state.agents.length} agent${state.agents.length === 1 ? "" : "s"}</strong>
+      <span>${state.agents.length ? state.agents.map((agent) => agent.name).slice(0, 3).join(", ") : "No agents yet"}</span>
+    </article>
+  `;
 }
 
 function renderThreads() {
@@ -622,6 +649,8 @@ el.connectButton.addEventListener("click", async () => {
   localStorage.setItem("laura_desktop_api_key", state.apiKey);
   await refreshAll();
 });
+el.openSettingsButton.addEventListener("click", openSettings);
+el.closeSettingsButton.addEventListener("click", closeSettings);
 el.setupButton.addEventListener("click", openSetup);
 el.setupCloseButton.addEventListener("click", closeSetup);
 el.setupSaveButton.addEventListener("click", () => saveSetup().catch((error) => toast(error.message)));
