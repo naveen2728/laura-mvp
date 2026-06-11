@@ -19,8 +19,10 @@
       "src/**/*",
       "package.json"
     ],
+    "icon": "src/assets/icon.ico",
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "icon": "src/assets/icon.ico"
     },
     "nsis": {
       "oneClick": false,

@@ -10,6 +10,7 @@ function createWindow() {
     minWidth: 1120,
     minHeight: 720,
     title: "Laura Desktop",
+    icon: path.join(__dirname, "assets", "icon.ico"),
     backgroundColor: "#0f1d1a",
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
