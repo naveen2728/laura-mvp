@@ -38,6 +38,7 @@ const state = {
   selectedProjectId: null,
   selectedThreadId: localStorage.getItem("laura_desktop_selected_thread") || null,
   threads: JSON.parse(localStorage.getItem("laura_desktop_threads") || "[]"),
+  remoteThreads: false,
   lastMemory: ""
 };
 
@@ -185,19 +186,49 @@ function escapeHtml(value) {
 }
 
 function saveThreads() {
+  if (state.remoteThreads) {
+    localStorage.setItem("laura_desktop_selected_thread", state.selectedThreadId || "");
+    return;
+  }
   localStorage.setItem("laura_desktop_threads", JSON.stringify(state.threads));
   localStorage.setItem("laura_desktop_selected_thread", state.selectedThreadId || "");
 }
 
 function currentThread() {
-  let thread = state.threads.find((item) => item.id === state.selectedThreadId);
+  let thread = state.threads.find((item) => String(item.id) === String(state.selectedThreadId));
   if (!thread) {
-    thread = createThread(false);
+    thread = {
+      id: `thread_${Date.now()}_${Math.random().toString(16).slice(2)}`,
+      title: "New thread",
+      projectId: state.selectedProjectId || null,
+      project_id: state.selectedProjectId || null,
+      messages: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    state.threads.unshift(thread);
+    state.selectedThreadId = thread.id;
+    saveThreads();
   }
   return thread;
 }
 
-function createThread(shouldRender = true) {
+async function createThread(shouldRender = true) {
+  if (state.remoteThreads) {
+    const thread = await request("/threads", {
+      method: "POST",
+      body: {
+        title: "New thread",
+        project_id: state.selectedProjectId || null
+      }
+    });
+    state.threads.unshift({ ...thread, messages: [] });
+    state.selectedThreadId = thread.id;
+    saveThreads();
+    if (shouldRender) render();
+    return state.threads[0];
+  }
+
   const thread = {
     id: `thread_${Date.now()}_${Math.random().toString(16).slice(2)}`,
     title: "New thread",
@@ -213,33 +244,51 @@ function createThread(shouldRender = true) {
   return thread;
 }
 
-function renameCurrentThread() {
+async function renameCurrentThread() {
   const thread = currentThread();
   const title = window.prompt("Thread name", thread.title || "New thread");
   if (!title) return;
   thread.title = title.trim().slice(0, 80) || "New thread";
   thread.updatedAt = new Date().toISOString();
+  if (state.remoteThreads) {
+    await request(`/threads/${thread.id}`, { method: "PATCH", body: { title: thread.title } });
+  }
   saveThreads();
   render();
 }
 
-function clearCurrentThread() {
+async function clearCurrentThread() {
   const thread = currentThread();
   if (thread.messages.length && !window.confirm("Clear all messages in this thread?")) return;
-  thread.messages = [];
-  thread.updatedAt = new Date().toISOString();
-  saveThreads();
+  if (state.remoteThreads) {
+    const projectId = thread.project_id || thread.projectId || null;
+    await request(`/threads/${thread.id}`, { method: "DELETE" });
+    const replacement = await request("/threads", {
+      method: "POST",
+      body: { title: thread.title || "New thread", project_id: projectId }
+    });
+    Object.assign(thread, replacement, { messages: [] });
+    state.selectedThreadId = replacement.id;
+  } else {
+    thread.messages = [];
+    thread.updatedAt = new Date().toISOString();
+    saveThreads();
+  }
   render();
 }
 
-function deleteCurrentThread() {
+async function deleteCurrentThread() {
   const thread = currentThread();
   if (!window.confirm(`Delete "${thread.title || "New thread"}"?`)) return;
-  state.threads = state.threads.filter((item) => item.id !== thread.id);
+  if (state.remoteThreads) {
+    await request(`/threads/${thread.id}`, { method: "DELETE" });
+  }
+  state.threads = state.threads.filter((item) => String(item.id) !== String(thread.id));
   if (!state.threads.length) {
-    createThread(false);
+    await createThread(false);
   } else {
     state.selectedThreadId = state.threads[0].id;
+    await loadCurrentThreadMessages();
   }
   saveThreads();
   render();
@@ -262,6 +311,7 @@ function addMessage(role, content, label) {
 async function refreshAll() {
   if (!state.apiKey) {
     connected(false);
+    state.remoteThreads = false;
     renderThreads();
     renderConfigurationSummary();
     renderMessages();
@@ -280,6 +330,7 @@ async function refreshAll() {
     if (!state.selectedProjectId && state.projects.length) {
       state.selectedProjectId = state.projects[0].id;
     }
+    await syncThreads();
     await loadTasks();
     render();
     connected(true);
@@ -287,6 +338,57 @@ async function refreshAll() {
     connected(false);
     toast(error.message);
   }
+}
+
+async function syncThreads() {
+  state.remoteThreads = true;
+  let threads = await request("/threads");
+  if (!threads.length && !localStorage.getItem("laura_desktop_threads_imported")) {
+    await importLocalThreads();
+    localStorage.setItem("laura_desktop_threads_imported", "true");
+    threads = await request("/threads");
+  }
+  state.threads = threads.map((thread) => ({ ...thread, messages: [] }));
+  if (!state.threads.length) {
+    await createThread(false);
+  } else if (!state.threads.some((thread) => String(thread.id) === String(state.selectedThreadId))) {
+    state.selectedThreadId = state.threads[0].id;
+  }
+  const selected = currentThread();
+  state.selectedProjectId = selected.project_id || selected.projectId || state.selectedProjectId;
+  await loadCurrentThreadMessages();
+  saveThreads();
+}
+
+async function importLocalThreads() {
+  const localThreads = JSON.parse(localStorage.getItem("laura_desktop_threads") || "[]");
+  for (const localThread of localThreads) {
+    const projectId = localThread.project_id || localThread.projectId || null;
+    const remoteThread = await request("/threads", {
+      method: "POST",
+      body: {
+        title: localThread.title || "Imported thread",
+        project_id: projectId && state.projects.some((project) => project.id === projectId) ? projectId : null
+      }
+    });
+    for (const message of localThread.messages || []) {
+      if (!message.content) continue;
+      await request(`/threads/${remoteThread.id}/messages`, {
+        method: "POST",
+        body: {
+          role: message.role || "assistant",
+          label: message.label || null,
+          content: message.content || ""
+        }
+      });
+    }
+  }
+}
+
+async function loadCurrentThreadMessages() {
+  if (!state.remoteThreads || !state.selectedThreadId) return;
+  const thread = currentThread();
+  thread.messages = await request(`/threads/${thread.id}/messages`);
 }
 
 async function loadTasks() {
@@ -329,21 +431,24 @@ function renderThreads() {
     return;
   }
   for (const thread of state.threads) {
-    const project = state.projects.find((item) => item.id === thread.projectId);
+    const threadProjectId = thread.project_id || thread.projectId;
+    const project = state.projects.find((item) => item.id === threadProjectId);
     const item = document.createElement("article");
-    item.className = `item thread-item ${thread.id === state.selectedThreadId ? "active" : ""}`;
+    const messageCount = thread.messages.length || thread.message_count || 0;
+    item.className = `item thread-item ${String(thread.id) === String(state.selectedThreadId) ? "active" : ""}`;
     item.innerHTML = `
       <div class="item-title">
         <h4>${escapeHtml(thread.title || "New thread")}</h4>
       </div>
-      <p>${escapeHtml(project ? project.name : "No project pinned")} - ${thread.messages.length} messages</p>
+      <p>${escapeHtml(project ? project.name : "No project pinned")} - ${messageCount} messages</p>
     `;
     item.addEventListener("click", async () => {
       state.selectedThreadId = thread.id;
-      if (thread.projectId) {
-        state.selectedProjectId = thread.projectId;
+      if (threadProjectId) {
+        state.selectedProjectId = threadProjectId;
         await loadTasks();
       }
+      await loadCurrentThreadMessages();
       saveThreads();
       render();
     });
@@ -630,6 +735,17 @@ async function sendMessage() {
   }
 
   addMessage("user", prompt, "You");
+  if (state.remoteThreads) {
+    const activeThread = currentThread();
+    await request(`/threads/${activeThread.id}`, {
+      method: "PATCH",
+      body: { title: activeThread.title, project_id: Number(el.runProjectInput.value) || null }
+    });
+    await request(`/threads/${currentThread().id}/messages`, {
+      method: "POST",
+      body: { role: "user", label: "You", content: prompt }
+    });
+  }
   el.composerInput.value = "";
   const thread = currentThread();
   const pendingIndex = thread.messages.length;
@@ -645,24 +761,50 @@ async function sendMessage() {
       }
     });
     state.lastMemory = result.memory_context;
-    thread.messages[pendingIndex] = {
+    const assistantMessage = {
       role: "assistant",
       label: `${result.agent_name} - ${result.model_name}`,
       content: result.output,
       createdAt: new Date().toISOString()
     };
+    if (state.remoteThreads) {
+      const saved = await request(`/threads/${thread.id}/messages`, {
+        method: "POST",
+        body: {
+          role: assistantMessage.role,
+          label: assistantMessage.label,
+          content: assistantMessage.content
+        }
+      });
+      thread.messages[pendingIndex] = saved;
+    } else {
+      thread.messages[pendingIndex] = assistantMessage;
+    }
     thread.updatedAt = new Date().toISOString();
     saveThreads();
     renderThreads();
     renderMessages();
     renderMemory();
   } catch (error) {
-    thread.messages[pendingIndex] = {
+    const errorMessage = {
       role: "assistant",
       label: "Laura",
       content: `Run failed: ${error.message}`,
       createdAt: new Date().toISOString()
     };
+    if (state.remoteThreads) {
+      const saved = await request(`/threads/${thread.id}/messages`, {
+        method: "POST",
+        body: {
+          role: errorMessage.role,
+          label: errorMessage.label,
+          content: errorMessage.content
+        }
+      });
+      thread.messages[pendingIndex] = saved;
+    } else {
+      thread.messages[pendingIndex] = errorMessage;
+    }
     thread.updatedAt = new Date().toISOString();
     saveThreads();
     renderThreads();
@@ -699,10 +841,10 @@ el.clearButton.addEventListener("click", () => {
   connected(false);
 });
 el.refreshButton.addEventListener("click", refreshAll);
-el.newThreadButton.addEventListener("click", () => createThread(true));
-el.renameThreadButton.addEventListener("click", renameCurrentThread);
-el.clearThreadButton.addEventListener("click", clearCurrentThread);
-el.deleteThreadButton.addEventListener("click", deleteCurrentThread);
+el.newThreadButton.addEventListener("click", () => createThread(true).catch((error) => toast(error.message)));
+el.renameThreadButton.addEventListener("click", () => renameCurrentThread().catch((error) => toast(error.message)));
+el.clearThreadButton.addEventListener("click", () => clearCurrentThread().catch((error) => toast(error.message)));
+el.deleteThreadButton.addEventListener("click", () => deleteCurrentThread().catch((error) => toast(error.message)));
 el.createProjectButton.addEventListener("click", () => createProject().catch((error) => toast(error.message)));
 el.createTaskButton.addEventListener("click", () => createTask().catch((error) => toast(error.message)));
 el.addModelButton.addEventListener("click", () => addModel().catch((error) => toast(error.message)));
@@ -718,7 +860,11 @@ el.runProjectInput.addEventListener("change", async () => {
   state.selectedProjectId = Number(el.runProjectInput.value);
   const thread = currentThread();
   thread.projectId = state.selectedProjectId;
+  thread.project_id = state.selectedProjectId;
   thread.updatedAt = new Date().toISOString();
+  if (state.remoteThreads) {
+    await request(`/threads/${thread.id}`, { method: "PATCH", body: { project_id: state.selectedProjectId } });
+  }
   saveThreads();
   await loadTasks();
   renderThreads();

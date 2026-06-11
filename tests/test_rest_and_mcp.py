@@ -136,6 +136,43 @@ def test_studio_model_provider_and_agent_flow():
     assert run_response.status_code == 404
 
 
+def test_synced_thread_and_message_flow():
+    client = TestClient(app)
+    user_id = client.post("/users", json={"email": "threads@example.com", "name": "Threads"}).json()["id"]
+    api_key = client.post("/api-keys", json={"user_id": user_id, "name": "desktop"}).json()["key"]
+    auth_headers = {"Authorization": f"Bearer {api_key}"}
+    project_id = client.post(
+        "/projects",
+        headers=auth_headers,
+        json={"name": "Desktop", "description": "Synced conversations"},
+    ).json()["id"]
+
+    thread_response = client.post(
+        "/threads",
+        headers=auth_headers,
+        json={"title": "Plan sync", "project_id": project_id},
+    )
+    assert thread_response.status_code == 201
+    thread = thread_response.json()
+    assert thread["title"] == "Plan sync"
+    assert thread["message_count"] == 0
+
+    message_response = client.post(
+        f"/threads/{thread['id']}/messages",
+        headers=auth_headers,
+        json={"role": "user", "label": "You", "content": "Persist this"},
+    )
+    assert message_response.status_code == 201
+
+    messages_response = client.get(f"/threads/{thread['id']}/messages", headers=auth_headers)
+    assert messages_response.status_code == 200
+    assert messages_response.json()[0]["content"] == "Persist this"
+
+    list_response = client.get("/threads", headers=auth_headers)
+    assert list_response.status_code == 200
+    assert list_response.json()[0]["message_count"] == 1
+
+
 @pytest.mark.anyio
 async def test_mcp_token_verifier_returns_user_subject():
     client = TestClient(app)

@@ -161,3 +161,42 @@ class StudioRunRead(BaseModel):
     model_name: str
     output: str
     memory_context: str
+
+
+class ConversationThreadCreate(BaseModel):
+    title: str = Field(default="New thread", min_length=1, max_length=200)
+    project_id: int | None = None
+
+
+class ConversationThreadUpdate(BaseModel):
+    title: str | None = Field(default=None, min_length=1, max_length=200)
+    project_id: int | None = None
+
+
+class ConversationThreadRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    user_id: int
+    project_id: int | None
+    title: str
+    created_at: datetime
+    updated_at: datetime
+    message_count: int = 0
+
+
+class ChatMessageCreate(BaseModel):
+    role: str = Field(min_length=1, max_length=40)
+    label: str | None = Field(default=None, max_length=200)
+    content: str = Field(min_length=1)
+
+
+class ChatMessageRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    thread_id: int
+    role: str
+    label: str | None
+    content: str
+    created_at: datetime
