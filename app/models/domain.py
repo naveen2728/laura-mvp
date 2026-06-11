@@ -104,6 +104,7 @@ class ModelProvider(Base):
     model_name: Mapped[str] = mapped_column(String(160))
     api_key_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
     api_key_prefix: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    api_key_encrypted: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
 

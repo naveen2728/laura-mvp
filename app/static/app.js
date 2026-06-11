@@ -43,6 +43,11 @@ const el = {
   agentModelInput: document.querySelector("#agentModelInput"),
   agentPromptInput: document.querySelector("#agentPromptInput"),
   agentList: document.querySelector("#agentList"),
+  runForm: document.querySelector("#runForm"),
+  runProjectInput: document.querySelector("#runProjectInput"),
+  runAgentInput: document.querySelector("#runAgentInput"),
+  runPromptInput: document.querySelector("#runPromptInput"),
+  runResult: document.querySelector("#runResult"),
   toast: document.querySelector("#toast"),
 };
 
@@ -105,6 +110,7 @@ function renderProjects() {
     item.querySelector("button").addEventListener("click", () => selectProject(project.id));
     el.projectList.appendChild(item);
   }
+  renderRunOptions();
 }
 
 function renderTasks() {
@@ -235,6 +241,31 @@ function renderAgents() {
     item.querySelector("button").addEventListener("click", () => deleteAgent(agent.id));
     el.agentList.appendChild(item);
   }
+  renderRunOptions();
+}
+
+function renderRunOptions() {
+  if (!el.runProjectInput || !el.runAgentInput) return;
+
+  const selectedProject = el.runProjectInput.value;
+  el.runProjectInput.innerHTML = "";
+  for (const project of state.projects) {
+    const option = document.createElement("option");
+    option.value = String(project.id);
+    option.textContent = project.name;
+    el.runProjectInput.appendChild(option);
+  }
+  if (selectedProject) el.runProjectInput.value = selectedProject;
+
+  const selectedAgent = el.runAgentInput.value;
+  el.runAgentInput.innerHTML = "";
+  for (const agent of state.agents) {
+    const option = document.createElement("option");
+    option.value = String(agent.id);
+    option.textContent = `${agent.name} (${agent.role})`;
+    el.runAgentInput.appendChild(option);
+  }
+  if (selectedAgent) el.runAgentInput.value = selectedAgent;
 }
 
 async function loadProjects() {
@@ -386,6 +417,33 @@ async function deleteAgent(agentId) {
   await loadStudio();
 }
 
+async function runAgent(event) {
+  event.preventDefault();
+  if (!el.runProjectInput.value || !el.runAgentInput.value) {
+    showToast("Choose a project and agent first");
+    return;
+  }
+
+  el.runResult.textContent = "Running agent...";
+  const result = await api("/studio/runs", {
+    method: "POST",
+    body: JSON.stringify({
+      project_id: Number(el.runProjectInput.value),
+      agent_id: Number(el.runAgentInput.value),
+      prompt: el.runPromptInput.value,
+    }),
+  });
+
+  el.runResult.textContent = [
+    `${result.agent_name} using ${result.model_name}`,
+    "",
+    result.output,
+    "",
+    "--- Laura memory used ---",
+    result.memory_context,
+  ].join("\n");
+}
+
 function escapeHtml(value) {
   return String(value)
     .replaceAll("&", "&amp;")
@@ -417,5 +475,6 @@ el.projectForm.addEventListener("submit", createProject);
 el.taskForm.addEventListener("submit", createTask);
 el.modelForm.addEventListener("submit", createModelProvider);
 el.agentForm.addEventListener("submit", createAgent);
+el.runForm.addEventListener("submit", runAgent);
 
 refreshAll();

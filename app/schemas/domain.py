@@ -145,3 +145,19 @@ class AgentRoleRead(BaseModel):
     system_prompt: str | None
     created_at: datetime
     updated_at: datetime
+
+
+class StudioRunCreate(BaseModel):
+    project_id: int
+    agent_id: int
+    prompt: str = Field(min_length=1)
+
+
+class StudioRunRead(BaseModel):
+    project_id: int
+    agent_id: int
+    agent_name: str
+    provider_name: str
+    model_name: str
+    output: str
+    memory_context: str

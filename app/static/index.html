@@ -168,6 +168,36 @@
         <div id="agentList" class="list"></div>
       </section>
 
+      <section class="panel studio-panel run-panel">
+        <div class="panel-header">
+          <div>
+            <p class="eyebrow">Run</p>
+            <h2>Agent Chat</h2>
+            <p>Send a prompt to a selected agent with Laura project memory attached.</p>
+          </div>
+        </div>
+        <form id="runForm" class="stack">
+          <div class="form-grid">
+            <label>
+              Project
+              <select id="runProjectInput"></select>
+            </label>
+            <label>
+              Agent
+              <select id="runAgentInput"></select>
+            </label>
+          </div>
+          <label>
+            Prompt
+            <textarea id="runPromptInput" rows="5" placeholder="Use Laura memory and tell me what to build next." required></textarea>
+          </label>
+          <button type="submit">Run agent</button>
+        </form>
+        <div id="runResult" class="run-result">
+          <p class="hint">Run output will appear here.</p>
+        </div>
+      </section>
+
       <section class="panel">
         <div class="panel-header">
           <div>

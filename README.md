@@ -98,6 +98,7 @@ Set these in your hosting provider:
 
 ```text
 APP_NAME=Laura MVP
+APP_SECRET_KEY=<long random secret>
 DATABASE_URL=<managed postgres connection string>
 CREATE_TABLES_ON_STARTUP=false
 RUN_MIGRATIONS_ON_STARTUP=true

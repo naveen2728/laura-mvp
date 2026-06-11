@@ -7,6 +7,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     app_name: str = "Laura MVP"
+    app_secret_key: str = "dev-only-change-me"
     database_url: str = "postgresql+psycopg://bridgemind:bridgemind@localhost:5432/bridgemind"
     create_tables_on_startup: bool = True
     run_migrations_on_startup: bool = True

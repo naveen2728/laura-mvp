@@ -13,6 +13,8 @@ from app.schemas import (
     ModelProviderCreate,
     ModelProviderRead,
     ModelProviderUpdate,
+    StudioRunCreate,
+    StudioRunRead,
 )
 from app.services import studio as studio_service
 
@@ -109,3 +111,27 @@ def delete_agent(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Agent role not found")
     studio_service.delete_agent_role(db, agent=agent)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post("/runs", response_model=StudioRunRead)
+def run_agent(
+    payload: StudioRunCreate,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+):
+    try:
+        result = studio_service.run_agent(
+            db,
+            user_id=current_user.id,
+            project_id=payload.project_id,
+            agent_id=payload.agent_id,
+            prompt=payload.prompt,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=f"Model provider request failed: {exc}") from exc
+
+    if result is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project, agent, or agent model not found")
+    return result

@@ -128,6 +128,13 @@ def test_studio_model_provider_and_agent_flow():
     assert list_response.status_code == 200
     assert len(list_response.json()) == 1
 
+    run_response = client.post(
+        "/studio/runs",
+        headers=auth_headers,
+        json={"project_id": 999, "agent_id": agent["id"], "prompt": "What should we do next?"},
+    )
+    assert run_response.status_code == 404
+
 
 @pytest.mark.anyio
 async def test_mcp_token_verifier_returns_user_subject():
