@@ -27,6 +27,7 @@
           <button id="connectButton">Connect</button>
           <button id="clearButton" class="ghost">Clear</button>
         </div>
+        <button id="setupButton" class="ghost setup-link">Setup guide</button>
       </section>
 
       <section class="sidebar-section surface">
@@ -132,6 +133,73 @@
     </aside>
 
     <div id="toast" class="toast"></div>
+    <div id="setupOverlay" class="setup-overlay hidden">
+      <section class="setup-modal surface">
+        <div class="setup-header">
+          <div>
+            <p class="eyebrow">First run</p>
+            <h2>Set up Laura</h2>
+          </div>
+          <button id="setupCloseButton" class="ghost">Close</button>
+        </div>
+
+        <div class="setup-grid">
+          <label>
+            Laura URL
+            <input id="setupBaseUrlInput" type="url" />
+          </label>
+          <label>
+            Laura API key
+            <input id="setupApiKeyInput" type="password" placeholder="bm_live_..." />
+          </label>
+        </div>
+
+        <div>
+          <div class="section-title setup-title">
+            <span>Model provider preset</span>
+          </div>
+          <div class="provider-grid">
+            <button class="provider-card active" data-provider="openrouter">
+              <strong>OpenRouter</strong>
+              <span>Kimi, Claude, GPT and more through one API.</span>
+            </button>
+            <button class="provider-card" data-provider="openai">
+              <strong>OpenAI</strong>
+              <span>Use OpenAI-compatible chat models directly.</span>
+            </button>
+            <button class="provider-card" data-provider="anthropic">
+              <strong>Anthropic</strong>
+              <span>Store Claude settings for orchestration.</span>
+            </button>
+            <button class="provider-card" data-provider="ollama">
+              <strong>Ollama</strong>
+              <span>Run local OpenAI-compatible models.</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="setup-grid">
+          <label>
+            Provider API key
+            <input id="setupProviderKeyInput" type="password" placeholder="Provider key, if needed" />
+          </label>
+          <label>
+            Model name
+            <input id="setupModelNameInput" placeholder="moonshotai/kimi-k2" />
+          </label>
+        </div>
+
+        <label>
+          Default agent prompt
+          <textarea id="setupAgentPromptInput" rows="4"></textarea>
+        </label>
+
+        <div class="setup-actions">
+          <span>Laura will connect, save the model, and create a default agent.</span>
+          <button id="setupSaveButton">Save setup</button>
+        </div>
+      </section>
+    </div>
     <script src="./app.js"></script>
   </body>
 </html>

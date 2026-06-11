@@ -1,6 +1,32 @@
 const DEFAULT_BASE_URL = "https://web-production-57e37.up.railway.app";
 const statusOptions = ["todo", "in-progress", "in-review", "complete"];
 const legacyMessages = JSON.parse(localStorage.getItem("laura_desktop_messages") || "[]");
+const providerPresets = {
+  openrouter: {
+    name: "OpenRouter",
+    kind: "openai-compatible",
+    baseUrl: "https://openrouter.ai/api/v1",
+    model: "moonshotai/kimi-k2"
+  },
+  openai: {
+    name: "OpenAI",
+    kind: "openai",
+    baseUrl: "",
+    model: "gpt-4.1"
+  },
+  anthropic: {
+    name: "Anthropic",
+    kind: "anthropic",
+    baseUrl: "",
+    model: "claude-sonnet-4-20250514"
+  },
+  ollama: {
+    name: "Ollama",
+    kind: "openai-compatible",
+    baseUrl: "http://localhost:11434/v1",
+    model: "llama3.1"
+  }
+};
 
 const state = {
   baseUrl: localStorage.getItem("laura_desktop_base_url") || DEFAULT_BASE_URL,
@@ -37,6 +63,15 @@ const el = {
   connectButton: $("#connectButton"),
   clearButton: $("#clearButton"),
   connectionStatus: $("#connectionStatus"),
+  setupButton: $("#setupButton"),
+  setupOverlay: $("#setupOverlay"),
+  setupCloseButton: $("#setupCloseButton"),
+  setupSaveButton: $("#setupSaveButton"),
+  setupBaseUrlInput: $("#setupBaseUrlInput"),
+  setupApiKeyInput: $("#setupApiKeyInput"),
+  setupProviderKeyInput: $("#setupProviderKeyInput"),
+  setupModelNameInput: $("#setupModelNameInput"),
+  setupAgentPromptInput: $("#setupAgentPromptInput"),
   refreshButton: $("#refreshButton"),
   newThreadButton: $("#newThreadButton"),
   threadList: $("#threadList"),
@@ -72,6 +107,8 @@ const el = {
   toast: $("#toast")
 };
 
+let selectedProvider = "openrouter";
+
 function request(path, options = {}) {
   return window.lauraDesktop.request({
     baseUrl: state.baseUrl,
@@ -91,6 +128,36 @@ function connected(value) {
   el.connectionStatus.textContent = value ? "Online" : "Offline";
   el.connectionStatus.classList.toggle("ok", value);
   el.connectionStatus.classList.toggle("bad", !value);
+}
+
+function selectedPreset() {
+  return providerPresets[selectedProvider];
+}
+
+function fillProviderPreset(provider) {
+  selectedProvider = provider;
+  const preset = selectedPreset();
+  document.querySelectorAll(".provider-card").forEach((card) => {
+    card.classList.toggle("active", card.dataset.provider === provider);
+  });
+  el.setupModelNameInput.value = preset.model;
+  el.modelDisplayNameInput.value = preset.name;
+  el.modelKindInput.value = preset.kind;
+  el.modelBaseUrlInput.value = preset.baseUrl;
+  el.modelNameInput.value = preset.model;
+}
+
+function openSetup() {
+  el.setupBaseUrlInput.value = state.baseUrl;
+  el.setupApiKeyInput.value = state.apiKey;
+  el.setupProviderKeyInput.value = "";
+  el.setupAgentPromptInput.value = "You are Laura's coding agent. Use project memory, tasks, and constraints to help plan, build, debug, and explain software work.";
+  fillProviderPreset(selectedProvider);
+  el.setupOverlay.classList.remove("hidden");
+}
+
+function closeSetup() {
+  el.setupOverlay.classList.add("hidden");
 }
 
 function escapeHtml(value) {
@@ -454,6 +521,44 @@ async function addAgent() {
   await refreshAll();
 }
 
+async function saveSetup() {
+  const preset = selectedPreset();
+  state.baseUrl = el.setupBaseUrlInput.value.trim() || DEFAULT_BASE_URL;
+  state.apiKey = el.setupApiKeyInput.value.trim();
+  localStorage.setItem("laura_desktop_base_url", state.baseUrl);
+  localStorage.setItem("laura_desktop_api_key", state.apiKey);
+  el.baseUrlInput.value = state.baseUrl;
+  el.apiKeyInput.value = state.apiKey;
+
+  await refreshAll();
+
+  const model = await request("/studio/models", {
+    method: "POST",
+    body: {
+      name: preset.name,
+      kind: preset.kind,
+      base_url: preset.baseUrl || null,
+      model_name: el.setupModelNameInput.value.trim() || preset.model,
+      api_key: el.setupProviderKeyInput.value.trim() || null
+    }
+  });
+
+  await request("/studio/agents", {
+    method: "POST",
+    body: {
+      name: "Coder",
+      role: "implementation",
+      model_provider_id: model.id,
+      system_prompt: el.setupAgentPromptInput.value.trim() || null
+    }
+  });
+
+  localStorage.setItem("laura_desktop_setup_done", "true");
+  closeSetup();
+  toast("Setup complete");
+  await refreshAll();
+}
+
 async function sendMessage() {
   const prompt = el.composerInput.value.trim();
   if (!prompt) return;
@@ -506,12 +611,22 @@ async function sendMessage() {
 
 el.baseUrlInput.value = state.baseUrl;
 el.apiKeyInput.value = state.apiKey;
+fillProviderPreset(selectedProvider);
+if (!localStorage.getItem("laura_desktop_setup_done") && !state.apiKey) {
+  openSetup();
+}
 el.connectButton.addEventListener("click", async () => {
   state.baseUrl = el.baseUrlInput.value.trim() || DEFAULT_BASE_URL;
   state.apiKey = el.apiKeyInput.value.trim();
   localStorage.setItem("laura_desktop_base_url", state.baseUrl);
   localStorage.setItem("laura_desktop_api_key", state.apiKey);
   await refreshAll();
+});
+el.setupButton.addEventListener("click", openSetup);
+el.setupCloseButton.addEventListener("click", closeSetup);
+el.setupSaveButton.addEventListener("click", () => saveSetup().catch((error) => toast(error.message)));
+document.querySelectorAll(".provider-card").forEach((card) => {
+  card.addEventListener("click", () => fillProviderPreset(card.dataset.provider));
 });
 el.clearButton.addEventListener("click", () => {
   localStorage.removeItem("laura_desktop_api_key");
