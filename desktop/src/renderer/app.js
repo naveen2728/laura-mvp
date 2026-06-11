@@ -1,5 +1,6 @@
 const DEFAULT_BASE_URL = "https://web-production-57e37.up.railway.app";
 const statusOptions = ["todo", "in-progress", "in-review", "complete"];
+const legacyMessages = JSON.parse(localStorage.getItem("laura_desktop_messages") || "[]");
 
 const state = {
   baseUrl: localStorage.getItem("laura_desktop_base_url") || DEFAULT_BASE_URL,
@@ -9,9 +10,24 @@ const state = {
   models: [],
   agents: [],
   selectedProjectId: null,
-  messages: JSON.parse(localStorage.getItem("laura_desktop_messages") || "[]"),
+  selectedThreadId: localStorage.getItem("laura_desktop_selected_thread") || null,
+  threads: JSON.parse(localStorage.getItem("laura_desktop_threads") || "[]"),
   lastMemory: ""
 };
+
+if (!state.threads.length) {
+  state.threads = [
+    {
+      id: `thread_${Date.now()}`,
+      title: legacyMessages.length ? "Imported thread" : "New thread",
+      projectId: null,
+      messages: legacyMessages,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }
+  ];
+  state.selectedThreadId = state.threads[0].id;
+}
 
 const $ = (selector) => document.querySelector(selector);
 
@@ -22,9 +38,12 @@ const el = {
   clearButton: $("#clearButton"),
   connectionStatus: $("#connectionStatus"),
   refreshButton: $("#refreshButton"),
+  newThreadButton: $("#newThreadButton"),
+  threadList: $("#threadList"),
   projectList: $("#projectList"),
   taskList: $("#taskList"),
   taskTitle: $("#taskTitle"),
+  threadTitle: $("#threadTitle"),
   projectNameInput: $("#projectNameInput"),
   projectDescriptionInput: $("#projectDescriptionInput"),
   createProjectButton: $("#createProjectButton"),
@@ -83,19 +102,53 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
-function saveMessages() {
-  localStorage.setItem("laura_desktop_messages", JSON.stringify(state.messages.slice(-50)));
+function saveThreads() {
+  localStorage.setItem("laura_desktop_threads", JSON.stringify(state.threads));
+  localStorage.setItem("laura_desktop_selected_thread", state.selectedThreadId || "");
+}
+
+function currentThread() {
+  let thread = state.threads.find((item) => item.id === state.selectedThreadId);
+  if (!thread) {
+    thread = createThread(false);
+  }
+  return thread;
+}
+
+function createThread(shouldRender = true) {
+  const thread = {
+    id: `thread_${Date.now()}_${Math.random().toString(16).slice(2)}`,
+    title: "New thread",
+    projectId: state.selectedProjectId || null,
+    messages: [],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  state.threads.unshift(thread);
+  state.selectedThreadId = thread.id;
+  saveThreads();
+  if (shouldRender) render();
+  return thread;
 }
 
 function addMessage(role, content, label) {
-  state.messages.push({ role, content, label, createdAt: new Date().toISOString() });
-  saveMessages();
+  const thread = currentThread();
+  thread.messages.push({ role, content, label, createdAt: new Date().toISOString() });
+  thread.messages = thread.messages.slice(-50);
+  if (role === "user" && thread.title === "New thread") {
+    thread.title = content.slice(0, 48) || "New thread";
+  }
+  thread.projectId = Number(el.runProjectInput.value) || thread.projectId || state.selectedProjectId || null;
+  thread.updatedAt = new Date().toISOString();
+  saveThreads();
+  renderThreads();
   renderMessages();
 }
 
 async function refreshAll() {
   if (!state.apiKey) {
     connected(false);
+    renderThreads();
     renderMessages();
     return;
   }
@@ -130,6 +183,7 @@ async function loadTasks() {
 }
 
 function render() {
+  renderThreads();
   renderProjects();
   renderTasks();
   renderModels();
@@ -137,6 +191,35 @@ function render() {
   renderRunOptions();
   renderMessages();
   renderMemory();
+}
+
+function renderThreads() {
+  el.threadList.innerHTML = "";
+  if (!state.threads.length) {
+    el.threadList.innerHTML = '<article class="item"><p>No threads yet.</p></article>';
+    return;
+  }
+  for (const thread of state.threads) {
+    const project = state.projects.find((item) => item.id === thread.projectId);
+    const item = document.createElement("article");
+    item.className = `item thread-item ${thread.id === state.selectedThreadId ? "active" : ""}`;
+    item.innerHTML = `
+      <div class="item-title">
+        <h4>${escapeHtml(thread.title || "New thread")}</h4>
+      </div>
+      <p>${escapeHtml(project ? project.name : "No project pinned")} - ${thread.messages.length} messages</p>
+    `;
+    item.addEventListener("click", async () => {
+      state.selectedThreadId = thread.id;
+      if (thread.projectId) {
+        state.selectedProjectId = thread.projectId;
+        await loadTasks();
+      }
+      saveThreads();
+      render();
+    });
+    el.threadList.appendChild(item);
+  }
 }
 
 function renderProjects() {
@@ -250,7 +333,7 @@ function renderAgents() {
 }
 
 function renderRunOptions() {
-  const selectedProject = el.runProjectInput.value || String(state.selectedProjectId || "");
+  const selectedProject = String(state.selectedProjectId || "");
   el.runProjectInput.innerHTML = "";
   for (const project of state.projects) {
     const option = document.createElement("option");
@@ -273,8 +356,10 @@ function renderRunOptions() {
 
 function renderMessages() {
   el.messageList.innerHTML = "";
-  const messages = state.messages.length
-    ? state.messages
+  const thread = currentThread();
+  el.threadTitle.textContent = thread.title || "Laura Composer";
+  const messages = thread.messages.length
+    ? thread.messages
     : [
         {
           role: "system",
@@ -379,7 +464,8 @@ async function sendMessage() {
 
   addMessage("user", prompt, "You");
   el.composerInput.value = "";
-  const pendingIndex = state.messages.length;
+  const thread = currentThread();
+  const pendingIndex = thread.messages.length;
   addMessage("assistant", "Working...", "Laura");
 
   try {
@@ -392,23 +478,27 @@ async function sendMessage() {
       }
     });
     state.lastMemory = result.memory_context;
-    state.messages[pendingIndex] = {
+    thread.messages[pendingIndex] = {
       role: "assistant",
       label: `${result.agent_name} - ${result.model_name}`,
       content: result.output,
       createdAt: new Date().toISOString()
     };
-    saveMessages();
+    thread.updatedAt = new Date().toISOString();
+    saveThreads();
+    renderThreads();
     renderMessages();
     renderMemory();
   } catch (error) {
-    state.messages[pendingIndex] = {
+    thread.messages[pendingIndex] = {
       role: "assistant",
       label: "Laura",
       content: `Run failed: ${error.message}`,
       createdAt: new Date().toISOString()
     };
-    saveMessages();
+    thread.updatedAt = new Date().toISOString();
+    saveThreads();
+    renderThreads();
     renderMessages();
     toast("Run failed");
   }
@@ -430,6 +520,7 @@ el.clearButton.addEventListener("click", () => {
   connected(false);
 });
 el.refreshButton.addEventListener("click", refreshAll);
+el.newThreadButton.addEventListener("click", () => createThread(true));
 el.createProjectButton.addEventListener("click", () => createProject().catch((error) => toast(error.message)));
 el.createTaskButton.addEventListener("click", () => createTask().catch((error) => toast(error.message)));
 el.addModelButton.addEventListener("click", () => addModel().catch((error) => toast(error.message)));
@@ -443,7 +534,12 @@ el.composerInput.addEventListener("keydown", (event) => {
 });
 el.runProjectInput.addEventListener("change", async () => {
   state.selectedProjectId = Number(el.runProjectInput.value);
+  const thread = currentThread();
+  thread.projectId = state.selectedProjectId;
+  thread.updatedAt = new Date().toISOString();
+  saveThreads();
   await loadTasks();
+  renderThreads();
   renderProjects();
   renderTasks();
   renderMemory();
