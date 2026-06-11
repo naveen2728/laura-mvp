@@ -16,7 +16,7 @@
         </div>
       </header>
 
-      <section class="connect-card">
+      <section class="connect-card surface">
         <div class="section-title">
           <span>Connection</span>
           <span id="connectionStatus" class="status bad">Offline</span>
@@ -29,7 +29,7 @@
         </div>
       </section>
 
-      <section class="sidebar-section">
+      <section class="sidebar-section surface">
         <div class="section-title">
           <span>Projects</span>
           <button id="refreshButton" class="icon-button" title="Refresh">Refresh</button>
@@ -42,7 +42,7 @@
         <div id="projectList" class="stack-list"></div>
       </section>
 
-      <section class="sidebar-section tasks-section">
+      <section class="sidebar-section tasks-section surface">
         <div class="section-title">
           <span id="taskTitle">Tasks</span>
           <button id="createTaskButton" class="icon-button" title="Add task">Add</button>
@@ -58,7 +58,7 @@
     <main class="chat-shell">
       <header class="chat-header">
         <div>
-          <p class="eyebrow">Active Thread</p>
+          <p class="eyebrow">Shared context thread</p>
           <h2 id="threadTitle">Laura Composer</h2>
         </div>
         <div class="header-controls">
@@ -70,23 +70,23 @@
       <section id="messageList" class="message-list" aria-live="polite"></section>
 
       <footer class="composer">
-        <textarea id="composerInput" rows="4" placeholder="Ask Laura to use shared memory, compare models, plan work, or run an agent..."></textarea>
+        <textarea id="composerInput" rows="4" placeholder="Ask Laura to plan, summarize, debug, or hand work to the selected agent..."></textarea>
         <div class="composer-actions">
-          <span id="composerHint">Messages run through the selected agent and project memory.</span>
+          <span id="composerHint">Ctrl + Enter to send. Project memory is attached automatically.</span>
           <button id="runAgentButton">Send</button>
         </div>
       </footer>
     </main>
 
     <aside class="right-rail">
-      <section class="inspector-card">
+      <section class="inspector-card surface">
         <div class="section-title">
           <span>Memory Used</span>
         </div>
         <pre id="memoryPreview">Connect and select a project to see Laura memory.</pre>
       </section>
 
-      <section class="inspector-card">
+      <section class="inspector-card surface">
         <div class="section-title">
           <span>Model Providers</span>
           <button id="addModelButton" class="icon-button">Add</button>
@@ -108,7 +108,7 @@
         <div id="modelList" class="mini-list"></div>
       </section>
 
-      <section class="inspector-card">
+      <section class="inspector-card surface">
         <div class="section-title">
           <span>Agents</span>
           <button id="addAgentButton" class="icon-button">Create</button>

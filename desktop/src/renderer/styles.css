@@ -1,29 +1,40 @@
 :root {
   color-scheme: dark;
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --bg: #080d0c;
-  --panel: #101816;
-  --panel-soft: #15211e;
-  --panel-raised: #192722;
-  --ink: #eef8f4;
-  --muted: #8ea39d;
-  --line: #263833;
-  --line-soft: #1c2a27;
-  --accent: #a7f3d0;
-  --accent-strong: #34d399;
+  --bg: #070908;
+  --rail: #0d1210;
+  --rail-2: #101815;
+  --surface: #111a17;
+  --surface-2: #16211d;
+  --surface-3: #1b2924;
+  --ink: #f3fbf7;
+  --muted: #91a19b;
+  --soft: #cad7d2;
+  --line: #23332e;
+  --line-2: #30463f;
+  --accent: #7dd3a8;
+  --accent-2: #3b82f6;
+  --accent-3: #f4c95d;
   --danger: #fb7185;
-  --warn: #fbbf24;
+  --shadow: 0 18px 60px rgba(0, 0, 0, 0.32);
 }
 
 * {
   box-sizing: border-box;
 }
 
+html,
 body {
-  background: var(--bg);
+  height: 100%;
+}
+
+body {
+  background:
+    radial-gradient(circle at 20% 0%, rgba(125, 211, 168, 0.09), transparent 28%),
+    linear-gradient(180deg, #080b0a 0%, var(--bg) 58%);
   color: var(--ink);
   display: grid;
-  grid-template-columns: 310px minmax(0, 1fr) 340px;
+  grid-template-columns: 306px minmax(540px, 1fr) 360px;
   height: 100vh;
   margin: 0;
   overflow: hidden;
@@ -37,38 +48,42 @@ select {
 }
 
 button {
-  background: var(--accent);
-  border: 1px solid var(--accent);
+  align-items: center;
+  background: linear-gradient(180deg, #a7f3c8, var(--accent));
+  border: 1px solid rgba(167, 243, 200, 0.82);
   border-radius: 8px;
-  color: #091210;
+  color: #06110d;
   cursor: pointer;
+  display: inline-flex;
+  font-size: 13px;
   font-weight: 850;
-  min-height: 36px;
-  padding: 8px 11px;
+  justify-content: center;
+  min-height: 34px;
+  padding: 7px 11px;
 }
 
 button:hover {
-  background: var(--accent-strong);
-  border-color: var(--accent-strong);
+  filter: brightness(1.05);
 }
 
 button.ghost,
 .icon-button {
-  background: transparent;
+  background: rgba(255, 255, 255, 0.02);
   border-color: var(--line);
-  color: var(--muted);
+  color: var(--soft);
 }
 
 button.ghost:hover,
 .icon-button:hover {
-  background: var(--panel-soft);
+  background: rgba(125, 211, 168, 0.08);
+  border-color: var(--line-2);
   color: var(--ink);
 }
 
 input,
 textarea,
 select {
-  background: #0b1210;
+  background: #09100e;
   border: 1px solid var(--line);
   border-radius: 8px;
   color: var(--ink);
@@ -82,17 +97,21 @@ textarea {
   resize: vertical;
 }
 
+input::placeholder,
+textarea::placeholder {
+  color: #6f817a;
+}
+
 input:focus,
 textarea:focus,
 select:focus {
-  border-color: var(--accent-strong);
-  box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.14);
+  border-color: rgba(125, 211, 168, 0.82);
+  box-shadow: 0 0 0 3px rgba(125, 211, 168, 0.13);
 }
 
 .left-rail,
 .right-rail {
-  background: #0f1715;
-  border-color: var(--line-soft);
+  background: rgba(13, 18, 16, 0.96);
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -101,27 +120,29 @@ select:focus {
 }
 
 .left-rail {
-  border-right: 1px solid var(--line-soft);
+  border-right: 1px solid var(--line);
   gap: 14px;
 }
 
 .right-rail {
-  border-left: 1px solid var(--line-soft);
+  border-left: 1px solid var(--line);
   gap: 12px;
 }
 
 .brand {
   align-items: center;
   display: flex;
-  gap: 11px;
-  padding: 4px 2px 10px;
+  gap: 12px;
+  padding: 4px 2px 8px;
 }
 
 .brand-mark {
   align-items: center;
-  background: var(--accent);
-  border-radius: 9px;
-  color: #0f1715;
+  background:
+    linear-gradient(135deg, rgba(125, 211, 168, 0.95), rgba(59, 130, 246, 0.85));
+  border-radius: 11px;
+  box-shadow: 0 10px 30px rgba(125, 211, 168, 0.14);
+  color: #07100d;
   display: flex;
   font-size: 23px;
   font-weight: 950;
@@ -140,7 +161,8 @@ select:focus {
 
 .brand h1 {
   font-size: 23px;
-  line-height: 1.1;
+  letter-spacing: 0;
+  line-height: 1.08;
 }
 
 .brand p,
@@ -151,12 +173,18 @@ select:focus {
   color: var(--muted);
 }
 
+.surface {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.025), transparent),
+    var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.02) inset;
+}
+
 .connect-card,
 .sidebar-section,
 .inspector-card {
-  background: var(--panel);
-  border: 1px solid var(--line-soft);
-  border-radius: 10px;
   padding: 12px;
 }
 
@@ -176,8 +204,11 @@ select:focus {
 }
 
 .section-title span {
-  font-size: 13px;
+  color: var(--soft);
+  font-size: 12px;
   font-weight: 900;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
 }
 
 .button-row {
@@ -187,19 +218,23 @@ select:focus {
 }
 
 .status {
+  border: 1px solid transparent;
   border-radius: 999px;
   font-size: 11px;
   font-weight: 950;
-  padding: 5px 8px;
+  padding: 4px 8px;
+  text-transform: none;
 }
 
 .status.ok {
-  background: rgba(52, 211, 153, 0.16);
-  color: var(--accent);
+  background: rgba(125, 211, 168, 0.12);
+  border-color: rgba(125, 211, 168, 0.28);
+  color: #a7f3c8;
 }
 
 .status.bad {
-  background: rgba(251, 113, 133, 0.14);
+  background: rgba(251, 113, 133, 0.11);
+  border-color: rgba(251, 113, 133, 0.24);
   color: var(--danger);
 }
 
@@ -209,21 +244,28 @@ select:focus {
   gap: 8px;
 }
 
-.tasks-section {
+.sidebar-section {
   min-height: 0;
+}
+
+.tasks-section {
+  flex: 1;
 }
 
 .item,
 .mini-item {
-  background: var(--panel-soft);
-  border: 1px solid var(--line-soft);
-  border-radius: 9px;
+  background: var(--surface-2);
+  border: 1px solid rgba(48, 70, 63, 0.7);
+  border-radius: 8px;
   padding: 10px;
 }
 
 .item.active {
-  border-color: var(--accent-strong);
-  box-shadow: inset 4px 0 0 var(--accent-strong);
+  background:
+    linear-gradient(90deg, rgba(125, 211, 168, 0.14), transparent 58%),
+    var(--surface-2);
+  border-color: rgba(125, 211, 168, 0.52);
+  box-shadow: inset 3px 0 0 var(--accent);
 }
 
 .item-title {
@@ -243,7 +285,9 @@ select:focus {
 
 .item h4,
 .mini-item h4 {
+  color: var(--ink);
   font-size: 14px;
+  line-height: 1.25;
 }
 
 .item p,
@@ -255,16 +299,20 @@ select:focus {
 }
 
 .pill {
-  background: #22342f;
+  background: rgba(125, 211, 168, 0.1);
+  border: 1px solid rgba(125, 211, 168, 0.22);
   border-radius: 999px;
-  color: var(--accent);
+  color: #b7f7d2;
   font-size: 11px;
-  font-weight: 950;
+  font-weight: 850;
   padding: 4px 7px;
   white-space: nowrap;
 }
 
 .chat-shell {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.018), transparent 42%),
+    #080c0b;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
   min-width: 0;
@@ -272,19 +320,23 @@ select:focus {
 
 .chat-header {
   align-items: center;
-  border-bottom: 1px solid var(--line-soft);
+  backdrop-filter: blur(16px);
+  background: rgba(8, 12, 11, 0.86);
+  border-bottom: 1px solid var(--line);
   display: flex;
-  gap: 14px;
+  gap: 18px;
   justify-content: space-between;
-  padding: 16px 18px;
+  padding: 16px 20px;
 }
 
 .chat-header h2 {
+  color: #f7fffb;
   font-size: 20px;
+  line-height: 1.2;
 }
 
 .eyebrow {
-  color: var(--accent);
+  color: #a7f3c8;
   font-size: 11px;
   font-weight: 950;
   margin-bottom: 5px;
@@ -294,28 +346,29 @@ select:focus {
 .header-controls {
   display: grid;
   gap: 8px;
-  grid-template-columns: 210px 230px;
-  max-width: 480px;
+  grid-template-columns: minmax(170px, 220px) minmax(190px, 250px);
+  max-width: 520px;
   width: 100%;
 }
 
 .message-list {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
   overflow: auto;
-  padding: 18px;
+  padding: 22px min(6vw, 58px);
 }
 
 .message {
   display: grid;
   gap: 7px;
-  max-width: 860px;
+  max-width: 880px;
 }
 
 .message.user {
   align-self: flex-end;
   justify-items: end;
+  max-width: 760px;
 }
 
 .message.assistant,
@@ -326,45 +379,57 @@ select:focus {
 .message-label {
   color: var(--muted);
   font-size: 12px;
-  font-weight: 900;
+  font-weight: 850;
 }
 
 .bubble {
-  border: 1px solid var(--line-soft);
-  border-radius: 12px;
-  line-height: 1.55;
-  padding: 13px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  line-height: 1.58;
+  padding: 14px 15px;
   white-space: pre-wrap;
 }
 
 .user .bubble {
-  background: var(--accent);
-  color: #07100e;
+  background: linear-gradient(180deg, #baf7d2, #8de8ba);
+  border-color: rgba(186, 247, 210, 0.84);
+  color: #07110d;
 }
 
 .assistant .bubble {
-  background: var(--panel-raised);
+  background: var(--surface-2);
+  border-color: rgba(48, 70, 63, 0.86);
 }
 
 .system .bubble {
-  background: #0d1513;
-  color: var(--muted);
+  background:
+    linear-gradient(90deg, rgba(59, 130, 246, 0.11), rgba(125, 211, 168, 0.08)),
+    #0d1412;
+  color: #cfdbd6;
 }
 
 .composer {
-  border-top: 1px solid var(--line-soft);
+  background: rgba(8, 12, 11, 0.94);
+  border-top: 1px solid var(--line);
   display: grid;
   gap: 10px;
-  padding: 14px 18px 16px;
+  padding: 14px min(6vw, 58px) 18px;
 }
 
 .composer textarea {
-  min-height: 108px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.025), transparent),
+    #0d1512;
+  border-color: rgba(48, 70, 63, 0.88);
+  box-shadow: var(--shadow);
+  min-height: 112px;
 }
 
 .composer-actions {
   align-items: center;
   display: flex;
+  gap: 12px;
   justify-content: space-between;
 }
 
@@ -372,23 +437,30 @@ select:focus {
   font-size: 12px;
 }
 
+.inspector-card {
+  display: grid;
+  gap: 10px;
+}
+
 pre {
-  background: #08100e;
-  border: 1px solid var(--line-soft);
-  border-radius: 9px;
+  background: #09100e;
+  border: 1px solid var(--line);
+  border-radius: 8px;
   color: #dff7ef;
   line-height: 1.45;
   margin: 0;
-  max-height: 220px;
+  max-height: 230px;
   overflow: auto;
   padding: 10px;
   white-space: pre-wrap;
 }
 
 .toast {
-  background: var(--accent);
+  background: #d8fbe8;
+  border: 1px solid rgba(125, 211, 168, 0.7);
   border-radius: 8px;
   bottom: 18px;
+  box-shadow: var(--shadow);
   color: #07100e;
   display: none;
   font-weight: 900;
@@ -400,4 +472,19 @@ pre {
 
 .toast.show {
   display: block;
+}
+
+@media (max-width: 1120px) {
+  body {
+    grid-template-columns: 280px minmax(420px, 1fr);
+  }
+
+  .right-rail {
+    display: none;
+  }
+
+  .header-controls {
+    grid-template-columns: 1fr;
+    max-width: 290px;
+  }
 }

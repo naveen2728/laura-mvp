@@ -279,7 +279,7 @@ function renderMessages() {
         {
           role: "system",
           label: "Laura",
-          content: "Connect to Laura, choose a project and agent, then ask a question. I will attach shared project memory to the selected model."
+          content: "Choose a project and agent, then ask Laura to plan, summarize, debug, or hand work to a model. The selected project memory is attached automatically."
         }
       ];
   for (const message of messages) {
@@ -394,7 +394,7 @@ async function sendMessage() {
     state.lastMemory = result.memory_context;
     state.messages[pendingIndex] = {
       role: "assistant",
-      label: `${result.agent_name} · ${result.model_name}`,
+      label: `${result.agent_name} - ${result.model_name}`,
       content: result.output,
       createdAt: new Date().toISOString()
     };
