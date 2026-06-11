@@ -7,146 +7,121 @@
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <aside class="sidebar">
-      <div class="brand">
+    <aside class="left-rail">
+      <header class="brand">
         <div class="brand-mark">L</div>
         <div>
           <h1>Laura</h1>
-          <p>Desktop Studio</p>
+          <p>Agent workspace</p>
         </div>
-      </div>
+      </header>
 
-      <nav class="nav">
-        <button class="nav-item active" data-view="workspace">Workspace</button>
-        <button class="nav-item" data-view="studio">Models</button>
-        <button class="nav-item" data-view="run">Run</button>
-      </nav>
-
-      <section class="connection">
-        <label>
-          Laura URL
-          <input id="baseUrlInput" type="url" />
-        </label>
-        <label>
-          API key
-          <input id="apiKeyInput" type="password" placeholder="bm_live_..." />
-        </label>
-        <div class="row">
+      <section class="connect-card">
+        <div class="section-title">
+          <span>Connection</span>
+          <span id="connectionStatus" class="status bad">Offline</span>
+        </div>
+        <input id="baseUrlInput" type="url" aria-label="Laura URL" />
+        <input id="apiKeyInput" type="password" placeholder="bm_live_..." aria-label="Laura API key" />
+        <div class="button-row">
           <button id="connectButton">Connect</button>
-          <button id="clearButton" class="secondary">Clear</button>
+          <button id="clearButton" class="ghost">Clear</button>
         </div>
-        <span id="connectionStatus" class="status bad">Disconnected</span>
+      </section>
+
+      <section class="sidebar-section">
+        <div class="section-title">
+          <span>Projects</span>
+          <button id="refreshButton" class="icon-button" title="Refresh">Refresh</button>
+        </div>
+        <div class="create-box">
+          <input id="projectNameInput" placeholder="New project" />
+          <textarea id="projectDescriptionInput" rows="2" placeholder="Description"></textarea>
+          <button id="createProjectButton">Create project</button>
+        </div>
+        <div id="projectList" class="stack-list"></div>
+      </section>
+
+      <section class="sidebar-section tasks-section">
+        <div class="section-title">
+          <span id="taskTitle">Tasks</span>
+          <button id="createTaskButton" class="icon-button" title="Add task">Add</button>
+        </div>
+        <div class="create-box">
+          <textarea id="taskInstructionsInput" rows="2" placeholder="Task instructions"></textarea>
+          <textarea id="taskContextInput" rows="2" placeholder="Optional context"></textarea>
+        </div>
+        <div id="taskList" class="stack-list"></div>
       </section>
     </aside>
 
-    <main class="app">
-      <header class="topbar">
+    <main class="chat-shell">
+      <header class="chat-header">
         <div>
-          <p class="eyebrow">Agentic orchestration</p>
-          <h2 id="viewTitle">Workspace</h2>
+          <p class="eyebrow">Active Thread</p>
+          <h2 id="threadTitle">Laura Composer</h2>
         </div>
-        <button id="refreshButton" class="secondary">Refresh</button>
+        <div class="header-controls">
+          <select id="runProjectInput" aria-label="Project"></select>
+          <select id="runAgentInput" aria-label="Agent"></select>
+        </div>
       </header>
 
-      <section id="workspaceView" class="view active">
-        <section class="panel">
-          <div class="panel-header">
-            <h3>Projects</h3>
-            <button id="createProjectButton">Create</button>
-          </div>
-          <div class="form compact">
-            <input id="projectNameInput" placeholder="Project name" />
-            <textarea id="projectDescriptionInput" rows="3" placeholder="Description"></textarea>
-          </div>
-          <div id="projectList" class="list"></div>
-        </section>
+      <section id="messageList" class="message-list" aria-live="polite"></section>
 
-        <section class="panel wide">
-          <div class="panel-header">
-            <div>
-              <h3 id="taskTitle">Tasks</h3>
-              <p id="taskSubtitle">Select a project to inspect shared memory.</p>
-            </div>
-            <button id="createTaskButton">Add task</button>
-          </div>
-          <div class="form">
-            <textarea id="taskInstructionsInput" rows="3" placeholder="Instructions for an agent"></textarea>
-            <textarea id="taskContextInput" rows="3" placeholder="Context, constraints, links, files"></textarea>
-          </div>
-          <div id="taskList" class="list"></div>
-        </section>
-      </section>
-
-      <section id="studioView" class="view">
-        <section class="panel">
-          <div class="panel-header">
-            <h3>Model Providers</h3>
-            <button id="addModelButton">Add model</button>
-          </div>
-          <div class="form">
-            <div class="grid-2">
-              <input id="modelDisplayNameInput" placeholder="Kimi K2" />
-              <select id="modelKindInput">
-                <option value="openai-compatible">OpenAI-compatible</option>
-                <option value="openai">OpenAI</option>
-                <option value="anthropic">Anthropic</option>
-                <option value="google">Google</option>
-                <option value="ollama">Ollama</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
-            <input id="modelBaseUrlInput" placeholder="https://openrouter.ai/api/v1" />
-            <div class="grid-2">
-              <input id="modelNameInput" placeholder="moonshotai/kimi-k2" />
-              <input id="modelApiKeyInput" type="password" placeholder="Provider API key" />
-            </div>
-          </div>
-          <div id="modelList" class="list"></div>
-        </section>
-
-        <section class="panel">
-          <div class="panel-header">
-            <h3>Agents</h3>
-            <button id="addAgentButton">Create agent</button>
-          </div>
-          <div class="form">
-            <div class="grid-2">
-              <input id="agentNameInput" placeholder="Coder" />
-              <input id="agentRoleInput" placeholder="implementation" value="assistant" />
-            </div>
-            <select id="agentModelInput"></select>
-            <textarea id="agentPromptInput" rows="4" placeholder="System prompt"></textarea>
-          </div>
-          <div id="agentList" class="list"></div>
-        </section>
-      </section>
-
-      <section id="runView" class="view">
-        <section class="panel run-card">
-          <div class="panel-header">
-            <div>
-              <h3>Run Agent</h3>
-              <p>Send a prompt with Laura project memory attached.</p>
-            </div>
-          </div>
-          <div class="form">
-            <div class="grid-2">
-              <select id="runProjectInput"></select>
-              <select id="runAgentInput"></select>
-            </div>
-            <textarea id="runPromptInput" rows="7" placeholder="Read Laura memory and tell me what we should build next."></textarea>
-            <button id="runAgentButton">Run agent</button>
-          </div>
-        </section>
-
-        <section class="panel output-card">
-          <div class="panel-header">
-            <h3>Output</h3>
-          </div>
-          <pre id="runOutput">Connect to Laura, configure a model and agent, then run a prompt.</pre>
-        </section>
-      </section>
+      <footer class="composer">
+        <textarea id="composerInput" rows="4" placeholder="Ask Laura to use shared memory, compare models, plan work, or run an agent..."></textarea>
+        <div class="composer-actions">
+          <span id="composerHint">Messages run through the selected agent and project memory.</span>
+          <button id="runAgentButton">Send</button>
+        </div>
+      </footer>
     </main>
+
+    <aside class="right-rail">
+      <section class="inspector-card">
+        <div class="section-title">
+          <span>Memory Used</span>
+        </div>
+        <pre id="memoryPreview">Connect and select a project to see Laura memory.</pre>
+      </section>
+
+      <section class="inspector-card">
+        <div class="section-title">
+          <span>Model Providers</span>
+          <button id="addModelButton" class="icon-button">Add</button>
+        </div>
+        <div class="compact-form">
+          <input id="modelDisplayNameInput" placeholder="Kimi K2" />
+          <select id="modelKindInput">
+            <option value="openai-compatible">OpenAI-compatible</option>
+            <option value="openai">OpenAI</option>
+            <option value="anthropic">Anthropic</option>
+            <option value="google">Google</option>
+            <option value="ollama">Ollama</option>
+            <option value="other">Other</option>
+          </select>
+          <input id="modelBaseUrlInput" placeholder="https://openrouter.ai/api/v1" />
+          <input id="modelNameInput" placeholder="moonshotai/kimi-k2" />
+          <input id="modelApiKeyInput" type="password" placeholder="Provider API key" />
+        </div>
+        <div id="modelList" class="mini-list"></div>
+      </section>
+
+      <section class="inspector-card">
+        <div class="section-title">
+          <span>Agents</span>
+          <button id="addAgentButton" class="icon-button">Create</button>
+        </div>
+        <div class="compact-form">
+          <input id="agentNameInput" placeholder="Coder" />
+          <input id="agentRoleInput" placeholder="implementation" value="assistant" />
+          <select id="agentModelInput"></select>
+          <textarea id="agentPromptInput" rows="3" placeholder="System prompt"></textarea>
+        </div>
+        <div id="agentList" class="mini-list"></div>
+      </section>
+    </aside>
 
     <div id="toast" class="toast"></div>
     <script src="./app.js"></script>

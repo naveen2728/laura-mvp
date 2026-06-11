@@ -8,7 +8,9 @@ const state = {
   tasks: [],
   models: [],
   agents: [],
-  selectedProjectId: null
+  selectedProjectId: null,
+  messages: JSON.parse(localStorage.getItem("laura_desktop_messages") || "[]"),
+  lastMemory: ""
 };
 
 const $ = (selector) => document.querySelector(selector);
@@ -20,11 +22,9 @@ const el = {
   clearButton: $("#clearButton"),
   connectionStatus: $("#connectionStatus"),
   refreshButton: $("#refreshButton"),
-  viewTitle: $("#viewTitle"),
   projectList: $("#projectList"),
   taskList: $("#taskList"),
   taskTitle: $("#taskTitle"),
-  taskSubtitle: $("#taskSubtitle"),
   projectNameInput: $("#projectNameInput"),
   projectDescriptionInput: $("#projectDescriptionInput"),
   createProjectButton: $("#createProjectButton"),
@@ -46,9 +46,10 @@ const el = {
   agentList: $("#agentList"),
   runProjectInput: $("#runProjectInput"),
   runAgentInput: $("#runAgentInput"),
-  runPromptInput: $("#runPromptInput"),
+  composerInput: $("#composerInput"),
   runAgentButton: $("#runAgentButton"),
-  runOutput: $("#runOutput"),
+  messageList: $("#messageList"),
+  memoryPreview: $("#memoryPreview"),
   toast: $("#toast")
 };
 
@@ -64,11 +65,11 @@ function request(path, options = {}) {
 function toast(message) {
   el.toast.textContent = message;
   el.toast.classList.add("show");
-  setTimeout(() => el.toast.classList.remove("show"), 2400);
+  setTimeout(() => el.toast.classList.remove("show"), 2600);
 }
 
 function connected(value) {
-  el.connectionStatus.textContent = value ? "Connected" : "Disconnected";
+  el.connectionStatus.textContent = value ? "Online" : "Offline";
   el.connectionStatus.classList.toggle("ok", value);
   el.connectionStatus.classList.toggle("bad", !value);
 }
@@ -82,9 +83,20 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
+function saveMessages() {
+  localStorage.setItem("laura_desktop_messages", JSON.stringify(state.messages.slice(-50)));
+}
+
+function addMessage(role, content, label) {
+  state.messages.push({ role, content, label, createdAt: new Date().toISOString() });
+  saveMessages();
+  renderMessages();
+}
+
 async function refreshAll() {
   if (!state.apiKey) {
     connected(false);
+    renderMessages();
     return;
   }
 
@@ -123,12 +135,14 @@ function render() {
   renderModels();
   renderAgents();
   renderRunOptions();
+  renderMessages();
+  renderMemory();
 }
 
 function renderProjects() {
   el.projectList.innerHTML = "";
   if (!state.projects.length) {
-    el.projectList.innerHTML = '<p class="item">No projects yet.</p>';
+    el.projectList.innerHTML = '<article class="item"><p>No projects yet.</p></article>';
     return;
   }
   for (const project of state.projects) {
@@ -137,7 +151,7 @@ function renderProjects() {
     item.innerHTML = `
       <div class="item-title">
         <h4>${escapeHtml(project.name)}</h4>
-        <button class="secondary">Open</button>
+        <button class="ghost">Open</button>
       </div>
       <p>${escapeHtml(project.description || "No description")}</p>
     `;
@@ -153,11 +167,10 @@ function renderProjects() {
 function renderTasks() {
   const project = state.projects.find((item) => item.id === state.selectedProjectId);
   el.taskTitle.textContent = project ? `Tasks: ${project.name}` : "Tasks";
-  el.taskSubtitle.textContent = project ? "Shared memory for every connected model." : "Select a project.";
   el.taskList.innerHTML = "";
   if (!project) return;
   if (!state.tasks.length) {
-    el.taskList.innerHTML = '<p class="item">No tasks yet.</p>';
+    el.taskList.innerHTML = '<article class="item"><p>No tasks yet.</p></article>';
     return;
   }
   for (const task of state.tasks) {
@@ -170,9 +183,9 @@ function renderTasks() {
       </div>
       <p>${escapeHtml(task.instructions)}</p>
       <p>${escapeHtml(task.context || "")}</p>
-      <div class="row">
+      <div class="button-row">
         <select>${statusOptions.map((status) => `<option value="${status}" ${status === task.status ? "selected" : ""}>${status}</option>`).join("")}</select>
-        <button class="secondary">Update</button>
+        <button class="ghost">Update</button>
       </div>
     `;
     const select = item.querySelector("select");
@@ -180,6 +193,7 @@ function renderTasks() {
       await request(`/tasks/${task.id}`, { method: "PATCH", body: { status: select.value } });
       await loadTasks();
       renderTasks();
+      renderMemory();
     });
     el.taskList.appendChild(item);
   }
@@ -188,12 +202,12 @@ function renderTasks() {
 function renderModels() {
   el.modelList.innerHTML = "";
   if (!state.models.length) {
-    el.modelList.innerHTML = '<p class="item">No models yet.</p>';
+    el.modelList.innerHTML = '<article class="mini-item"><p>No models configured.</p></article>';
     return;
   }
   for (const model of state.models) {
     const item = document.createElement("article");
-    item.className = "item";
+    item.className = "mini-item";
     item.innerHTML = `
       <div class="item-title">
         <h4>${escapeHtml(model.name)}</h4>
@@ -215,15 +229,14 @@ function renderAgents() {
     option.textContent = `${model.name} (${model.model_name})`;
     el.agentModelInput.appendChild(option);
   }
-
   if (!state.agents.length) {
-    el.agentList.innerHTML = '<p class="item">No agents yet.</p>';
+    el.agentList.innerHTML = '<article class="mini-item"><p>No agents configured.</p></article>';
     return;
   }
   for (const agent of state.agents) {
     const model = state.models.find((item) => item.id === agent.model_provider_id);
     const item = document.createElement("article");
-    item.className = "item";
+    item.className = "mini-item";
     item.innerHTML = `
       <div class="item-title">
         <h4>${escapeHtml(agent.name)}</h4>
@@ -237,6 +250,7 @@ function renderAgents() {
 }
 
 function renderRunOptions() {
+  const selectedProject = el.runProjectInput.value || String(state.selectedProjectId || "");
   el.runProjectInput.innerHTML = "";
   for (const project of state.projects) {
     const option = document.createElement("option");
@@ -244,8 +258,9 @@ function renderRunOptions() {
     option.textContent = project.name;
     el.runProjectInput.appendChild(option);
   }
-  if (state.selectedProjectId) el.runProjectInput.value = state.selectedProjectId;
+  if (selectedProject) el.runProjectInput.value = selectedProject;
 
+  const selectedAgent = el.runAgentInput.value;
   el.runAgentInput.innerHTML = "";
   for (const agent of state.agents) {
     const option = document.createElement("option");
@@ -253,6 +268,45 @@ function renderRunOptions() {
     option.textContent = `${agent.name} (${agent.role})`;
     el.runAgentInput.appendChild(option);
   }
+  if (selectedAgent) el.runAgentInput.value = selectedAgent;
+}
+
+function renderMessages() {
+  el.messageList.innerHTML = "";
+  const messages = state.messages.length
+    ? state.messages
+    : [
+        {
+          role: "system",
+          label: "Laura",
+          content: "Connect to Laura, choose a project and agent, then ask a question. I will attach shared project memory to the selected model."
+        }
+      ];
+  for (const message of messages) {
+    const item = document.createElement("article");
+    item.className = `message ${message.role}`;
+    item.innerHTML = `
+      <div class="message-label">${escapeHtml(message.label || (message.role === "user" ? "You" : "Laura"))}</div>
+      <div class="bubble">${escapeHtml(message.content)}</div>
+    `;
+    el.messageList.appendChild(item);
+  }
+  el.messageList.scrollTop = el.messageList.scrollHeight;
+}
+
+function renderMemory() {
+  const project = state.projects.find((item) => item.id === state.selectedProjectId);
+  if (!project) {
+    el.memoryPreview.textContent = "No project selected.";
+    return;
+  }
+  const taskLines = state.tasks.map((task) => `- Task #${task.id} [${task.status}]: ${task.instructions}${task.context ? `\n  Context: ${task.context}` : ""}`);
+  el.memoryPreview.textContent = state.lastMemory || [
+    `Project: ${project.name}`,
+    `Description: ${project.description || "None"}`,
+    "Tasks:",
+    taskLines.length ? taskLines.join("\n") : "No tasks yet."
+  ].join("\n");
 }
 
 async function createProject() {
@@ -315,35 +369,50 @@ async function addAgent() {
   await refreshAll();
 }
 
-async function runAgent() {
-  el.runOutput.textContent = "Running...";
-  const result = await request("/studio/runs", {
-    method: "POST",
-    body: {
-      project_id: Number(el.runProjectInput.value),
-      agent_id: Number(el.runAgentInput.value),
-      prompt: el.runPromptInput.value
-    }
-  });
-  el.runOutput.textContent = [
-    `${result.agent_name} using ${result.model_name}`,
-    "",
-    result.output,
-    "",
-    "--- Laura memory used ---",
-    result.memory_context
-  ].join("\n");
-}
+async function sendMessage() {
+  const prompt = el.composerInput.value.trim();
+  if (!prompt) return;
+  if (!el.runProjectInput.value || !el.runAgentInput.value) {
+    toast("Choose a project and agent first");
+    return;
+  }
 
-document.querySelectorAll(".nav-item").forEach((button) => {
-  button.addEventListener("click", () => {
-    document.querySelectorAll(".nav-item").forEach((item) => item.classList.remove("active"));
-    document.querySelectorAll(".view").forEach((view) => view.classList.remove("active"));
-    button.classList.add("active");
-    $(`#${button.dataset.view}View`).classList.add("active");
-    el.viewTitle.textContent = button.textContent;
-  });
-});
+  addMessage("user", prompt, "You");
+  el.composerInput.value = "";
+  const pendingIndex = state.messages.length;
+  addMessage("assistant", "Working...", "Laura");
+
+  try {
+    const result = await request("/studio/runs", {
+      method: "POST",
+      body: {
+        project_id: Number(el.runProjectInput.value),
+        agent_id: Number(el.runAgentInput.value),
+        prompt
+      }
+    });
+    state.lastMemory = result.memory_context;
+    state.messages[pendingIndex] = {
+      role: "assistant",
+      label: `${result.agent_name} · ${result.model_name}`,
+      content: result.output,
+      createdAt: new Date().toISOString()
+    };
+    saveMessages();
+    renderMessages();
+    renderMemory();
+  } catch (error) {
+    state.messages[pendingIndex] = {
+      role: "assistant",
+      label: "Laura",
+      content: `Run failed: ${error.message}`,
+      createdAt: new Date().toISOString()
+    };
+    saveMessages();
+    renderMessages();
+    toast("Run failed");
+  }
+}
 
 el.baseUrlInput.value = state.baseUrl;
 el.apiKeyInput.value = state.apiKey;
@@ -365,9 +434,19 @@ el.createProjectButton.addEventListener("click", () => createProject().catch((er
 el.createTaskButton.addEventListener("click", () => createTask().catch((error) => toast(error.message)));
 el.addModelButton.addEventListener("click", () => addModel().catch((error) => toast(error.message)));
 el.addAgentButton.addEventListener("click", () => addAgent().catch((error) => toast(error.message)));
-el.runAgentButton.addEventListener("click", () => runAgent().catch((error) => {
-  el.runOutput.textContent = error.message;
-  toast("Run failed");
-}));
+el.runAgentButton.addEventListener("click", () => sendMessage().catch((error) => toast(error.message)));
+el.composerInput.addEventListener("keydown", (event) => {
+  if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
+    event.preventDefault();
+    sendMessage().catch((error) => toast(error.message));
+  }
+});
+el.runProjectInput.addEventListener("change", async () => {
+  state.selectedProjectId = Number(el.runProjectInput.value);
+  await loadTasks();
+  renderProjects();
+  renderTasks();
+  renderMemory();
+});
 
 refreshAll();
