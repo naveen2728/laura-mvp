@@ -1,6 +1,8 @@
 from contextlib import asynccontextmanager
 from pathlib import Path
 
+from alembic import command
+from alembic.config import Config
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -14,6 +16,9 @@ from app.mcp.server import mcp
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings = get_settings()
+    if settings.run_migrations_on_startup:
+        alembic_cfg = Config(str(Path(__file__).resolve().parent.parent / "alembic.ini"))
+        command.upgrade(alembic_cfg, "head")
     if settings.create_tables_on_startup:
         Base.metadata.create_all(bind=engine)
     async with mcp.session_manager.run():

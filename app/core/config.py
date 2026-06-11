@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     app_name: str = "Laura MVP"
     database_url: str = "postgresql+psycopg://bridgemind:bridgemind@localhost:5432/bridgemind"
     create_tables_on_startup: bool = True
+    run_migrations_on_startup: bool = True
     mcp_issuer_url: AnyHttpUrl = "http://localhost:8000"
     mcp_resource_server_url: AnyHttpUrl = "http://localhost:8000"
 

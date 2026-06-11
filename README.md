@@ -100,6 +100,7 @@ Set these in your hosting provider:
 APP_NAME=Laura MVP
 DATABASE_URL=<managed postgres connection string>
 CREATE_TABLES_ON_STARTUP=false
+RUN_MIGRATIONS_ON_STARTUP=true
 MCP_ISSUER_URL=https://your-public-laura-domain
 MCP_RESOURCE_SERVER_URL=https://your-public-laura-domain
 ```
