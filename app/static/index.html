@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Laura</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand-mark" aria-hidden="true">L</div>
+      <div class="brand-copy">
+        <h1>Laura</h1>
+        <p>Shared context for coding agents, tasks, and project memory.</p>
+      </div>
+      <nav class="topnav" aria-label="Primary">
+        <a href="/docs">API Docs</a>
+        <a href="/mcp">MCP</a>
+      </nav>
+    </header>
+
+    <main class="shell">
+      <section class="panel auth-panel accent-panel">
+        <div class="panel-header">
+          <div>
+            <p class="eyebrow">Remote MCP</p>
+            <h2>Connection</h2>
+          </div>
+          <span id="connectionStatus" class="status-pill">Not connected</span>
+        </div>
+        <label>
+          API key
+          <input id="apiKeyInput" type="password" placeholder="bm_live_..." autocomplete="off" />
+        </label>
+        <div class="row">
+          <button id="saveKeyButton" type="button">Use key</button>
+          <button id="clearKeyButton" type="button" class="secondary">Clear</button>
+        </div>
+        <p class="hint">Paste a Laura API key to manage the same context your IDE agents see over MCP.</p>
+        <div class="endpoint-box">
+          <span>MCP endpoint</span>
+          <code>http://localhost:8000/mcp</code>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <div>
+            <p class="eyebrow">Workspace</p>
+            <h2>Projects</h2>
+          </div>
+          <button id="refreshProjectsButton" type="button" class="secondary">Refresh</button>
+        </div>
+        <form id="projectForm" class="stack">
+          <label>
+            Name
+            <input id="projectNameInput" type="text" placeholder="Agent OS" required />
+          </label>
+          <label>
+            Description
+            <textarea id="projectDescriptionInput" rows="3" placeholder="Shared context for a coding workflow"></textarea>
+          </label>
+          <button type="submit">Create project</button>
+        </form>
+        <div id="projectList" class="list"></div>
+      </section>
+
+      <section class="panel workspace">
+        <div class="panel-header">
+          <div>
+            <p class="eyebrow">Agent Queue</p>
+            <h2 id="selectedProjectTitle">Tasks</h2>
+            <p id="selectedProjectSubtitle">Select a project to view its task context.</p>
+          </div>
+          <button id="refreshTasksButton" type="button" class="secondary">Refresh</button>
+        </div>
+        <form id="taskForm" class="stack">
+          <label>
+            Instructions
+            <textarea id="taskInstructionsInput" rows="3" placeholder="What should the agent do?" required></textarea>
+          </label>
+          <label>
+            Context
+            <textarea id="taskContextInput" rows="4" placeholder="Relevant files, decisions, constraints, or links"></textarea>
+          </label>
+          <button type="submit">Create task</button>
+        </form>
+        <div id="taskList" class="list"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <div>
+            <p class="eyebrow">Access</p>
+            <h2>API Keys</h2>
+          </div>
+          <button id="refreshKeysButton" type="button" class="secondary">Refresh</button>
+        </div>
+        <div id="apiKeyList" class="list"></div>
+      </section>
+    </main>
+
+    <div id="toast" class="toast" role="status"></div>
+    <script src="/static/app.js"></script>
+  </body>
+</html>
