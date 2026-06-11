@@ -9,9 +9,10 @@ from sqlalchemy.orm import Session
 from app.core.config import get_settings
 from app.db.session import SessionLocal
 from app.models import ApiKey, TaskStatus
-from app.schemas import ProjectCreate, TaskCreate
+from app.schemas import ChatMessageCreate, ConversationThreadCreate, ProjectCreate, TaskCreate
 from app.services import projects as project_service
 from app.services import tasks as task_service
+from app.services import threads as thread_service
 from app.services.api_keys import authenticate_api_key
 
 
@@ -34,6 +35,37 @@ def _task_to_dict(task) -> dict[str, Any]:
         "status": task.status.value,
         "created_at": task.created_at.isoformat(),
         "updated_at": task.updated_at.isoformat(),
+    }
+
+
+def _thread_to_dict(thread) -> dict[str, Any]:
+    if isinstance(thread, dict):
+        return {
+            "id": thread["id"],
+            "project_id": thread["project_id"],
+            "title": thread["title"],
+            "message_count": thread.get("message_count", 0),
+            "created_at": thread["created_at"].isoformat(),
+            "updated_at": thread["updated_at"].isoformat(),
+        }
+    return {
+        "id": thread.id,
+        "project_id": thread.project_id,
+        "title": thread.title,
+        "message_count": len(getattr(thread, "messages", [])),
+        "created_at": thread.created_at.isoformat(),
+        "updated_at": thread.updated_at.isoformat(),
+    }
+
+
+def _message_to_dict(message) -> dict[str, Any]:
+    return {
+        "id": message.id,
+        "thread_id": message.thread_id,
+        "role": message.role,
+        "label": message.label,
+        "content": message.content,
+        "created_at": message.created_at.isoformat(),
     }
 
 
@@ -148,3 +180,59 @@ def update_task_status(task_id: int, status: TaskStatus) -> dict[str, Any]:
         if task is None:
             raise ValueError("Task not found")
         return _task_to_dict(task_service.update_task_status(db, task=task, status=status))
+
+
+@mcp.tool()
+def list_threads(project_id: int | None = None) -> list[dict[str, Any]]:
+    """Return synced conversation threads, optionally filtered by project id."""
+    user_id = _current_user_id()
+    with _with_db() as db:
+        threads = thread_service.list_threads(db, user_id=user_id)
+        if project_id is not None:
+            project = project_service.get_project(db, user_id=user_id, project_id=project_id)
+            if project is None:
+                raise ValueError("Project not found")
+            threads = [thread for thread in threads if thread["project_id"] == project_id]
+        return [_thread_to_dict(thread) for thread in threads]
+
+
+@mcp.tool()
+def create_thread(title: str = "New thread", project_id: int | None = None) -> dict[str, Any]:
+    """Create a synced conversation thread for the authenticated user."""
+    user_id = _current_user_id()
+    with _with_db() as db:
+        thread = thread_service.create_thread(
+            db,
+            user_id=user_id,
+            data=ConversationThreadCreate(title=title, project_id=project_id),
+        )
+        if thread is None:
+            raise ValueError("Project not found")
+        return _thread_to_dict(thread)
+
+
+@mcp.tool()
+def list_thread_messages(thread_id: int) -> list[dict[str, Any]]:
+    """Return all messages in one synced thread."""
+    user_id = _current_user_id()
+    with _with_db() as db:
+        messages = thread_service.list_messages(db, user_id=user_id, thread_id=thread_id)
+        if messages is None:
+            raise ValueError("Thread not found")
+        return [_message_to_dict(message) for message in messages]
+
+
+@mcp.tool()
+def add_thread_message(thread_id: int, role: str, content: str, label: str | None = None) -> dict[str, Any]:
+    """Append a message to a synced thread. Role examples: user, assistant, system."""
+    user_id = _current_user_id()
+    with _with_db() as db:
+        message = thread_service.create_message(
+            db,
+            user_id=user_id,
+            thread_id=thread_id,
+            data=ChatMessageCreate(role=role, label=label, content=content),
+        )
+        if message is None:
+            raise ValueError("Thread not found")
+        return _message_to_dict(message)
