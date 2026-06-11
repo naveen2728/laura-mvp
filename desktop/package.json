@@ -6,9 +6,31 @@
   "private": true,
   "scripts": {
     "start": "electron .",
-    "check": "node --check src/main.js && node --check src/preload.js && node --check src/renderer/app.js"
+    "check": "node --check src/main.js && node --check src/preload.js && node --check src/renderer/app.js",
+    "dist": "electron-builder --win nsis"
+  },
+  "build": {
+    "appId": "ai.laura.desktop",
+    "productName": "Laura",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
   },
   "devDependencies": {
-    "electron": "^35.7.5"
+    "electron": "^35.7.5",
+    "electron-builder": "^26.15.2"
   }
 }

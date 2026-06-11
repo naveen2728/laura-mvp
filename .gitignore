@@ -5,6 +5,7 @@ __pycache__/
 .env
 *.db
 node_modules/
+desktop/release/
 .mypy_cache/
 .ruff_cache/
 postgres_data/
