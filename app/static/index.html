@@ -88,6 +88,86 @@
         <div id="taskList" class="list"></div>
       </section>
 
+      <section class="panel studio-panel">
+        <div class="panel-header">
+          <div>
+            <p class="eyebrow">Studio</p>
+            <h2>Models</h2>
+            <p>Add OpenAI-compatible, Kimi, Claude, Gemini, OpenRouter, or local model endpoints.</p>
+          </div>
+          <button id="refreshStudioButton" type="button" class="secondary">Refresh</button>
+        </div>
+        <form id="modelForm" class="stack">
+          <div class="form-grid">
+            <label>
+              Name
+              <input id="modelNameInput" type="text" placeholder="Kimi K2 via OpenRouter" required />
+            </label>
+            <label>
+              Provider
+              <select id="modelKindInput">
+                <option value="openai-compatible">OpenAI-compatible</option>
+                <option value="openai">OpenAI</option>
+                <option value="anthropic">Anthropic</option>
+                <option value="google">Google</option>
+                <option value="ollama">Ollama</option>
+                <option value="other">Other</option>
+              </select>
+            </label>
+          </div>
+          <label>
+            Base URL
+            <input id="modelBaseUrlInput" type="url" placeholder="https://openrouter.ai/api/v1" />
+          </label>
+          <div class="form-grid">
+            <label>
+              Model name
+              <input id="modelNameValueInput" type="text" placeholder="moonshotai/kimi-k2" required />
+            </label>
+            <label>
+              Provider API key
+              <input id="modelApiKeyInput" type="password" placeholder="sk-..." autocomplete="off" />
+            </label>
+          </div>
+          <button type="submit">Add model</button>
+        </form>
+        <div id="modelList" class="list"></div>
+      </section>
+
+      <section class="panel studio-panel">
+        <div class="panel-header">
+          <div>
+            <p class="eyebrow">Orchestration</p>
+            <h2>Agents</h2>
+            <p>Assign models to roles so Laura can coordinate specialist agents later.</p>
+          </div>
+        </div>
+        <form id="agentForm" class="stack">
+          <div class="form-grid">
+            <label>
+              Agent name
+              <input id="agentNameInput" type="text" placeholder="Coder" required />
+            </label>
+            <label>
+              Role
+              <input id="agentRoleInput" type="text" placeholder="implementation" value="assistant" required />
+            </label>
+          </div>
+          <label>
+            Model
+            <select id="agentModelInput">
+              <option value="">No model selected</option>
+            </select>
+          </label>
+          <label>
+            System prompt
+            <textarea id="agentPromptInput" rows="4" placeholder="You are Laura's coding agent. Use shared memory before making changes."></textarea>
+          </label>
+          <button type="submit">Create agent</button>
+        </form>
+        <div id="agentList" class="list"></div>
+      </section>
+
       <section class="panel">
         <div class="panel-header">
           <div>

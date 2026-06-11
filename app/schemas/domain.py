@@ -2,7 +2,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
-from app.models.domain import TaskStatus
+from app.models.domain import ProviderKind, TaskStatus
 
 
 class UserCreate(BaseModel):
@@ -86,5 +86,62 @@ class TaskRead(BaseModel):
     instructions: str
     context: str | None
     status: TaskStatus
+    created_at: datetime
+    updated_at: datetime
+
+
+class ModelProviderCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=120)
+    kind: ProviderKind = ProviderKind.openai_compatible
+    base_url: str | None = Field(default=None, max_length=500)
+    model_name: str = Field(min_length=1, max_length=160)
+    api_key: str | None = Field(default=None, min_length=1)
+
+
+class ModelProviderUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=120)
+    kind: ProviderKind | None = None
+    base_url: str | None = Field(default=None, max_length=500)
+    model_name: str | None = Field(default=None, min_length=1, max_length=160)
+    api_key: str | None = Field(default=None, min_length=1)
+
+
+class ModelProviderRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    user_id: int
+    name: str
+    kind: ProviderKind
+    base_url: str | None
+    model_name: str
+    api_key_prefix: str | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class AgentRoleCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=120)
+    role: str = Field(default="assistant", min_length=1, max_length=120)
+    model_provider_id: int | None = None
+    system_prompt: str | None = None
+
+
+class AgentRoleUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=120)
+    role: str | None = Field(default=None, min_length=1, max_length=120)
+    model_provider_id: int | None = None
+    system_prompt: str | None = None
+
+
+class AgentRoleRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    user_id: int
+    name: str
+    role: str
+    model_provider_id: int | None
+    system_prompt: str | None
     created_at: datetime
     updated_at: datetime

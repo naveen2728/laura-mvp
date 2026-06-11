@@ -1,7 +1,13 @@
 from app.schemas.domain import (
+    AgentRoleCreate,
+    AgentRoleRead,
+    AgentRoleUpdate,
     ApiKeyCreate,
     ApiKeyMetadataRead,
     ApiKeyRead,
+    ModelProviderCreate,
+    ModelProviderRead,
+    ModelProviderUpdate,
     ProjectCreate,
     ProjectRead,
     ProjectUpdate,
@@ -13,9 +19,15 @@ from app.schemas.domain import (
 )
 
 __all__ = [
+    "AgentRoleCreate",
+    "AgentRoleRead",
+    "AgentRoleUpdate",
     "ApiKeyCreate",
     "ApiKeyMetadataRead",
     "ApiKeyRead",
+    "ModelProviderCreate",
+    "ModelProviderRead",
+    "ModelProviderUpdate",
     "ProjectCreate",
     "ProjectRead",
     "ProjectUpdate",

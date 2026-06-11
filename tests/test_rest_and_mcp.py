@@ -86,6 +86,49 @@ def test_dashboard_serves_static_ui():
     assert "Laura" in response.text
 
 
+def test_studio_model_provider_and_agent_flow():
+    client = TestClient(app)
+    user_id = client.post("/users", json={"email": "studio@example.com", "name": "Studio"}).json()["id"]
+    api_key = client.post("/api-keys", json={"user_id": user_id, "name": "studio"}).json()["key"]
+    auth_headers = {"Authorization": f"Bearer {api_key}"}
+
+    provider_response = client.post(
+        "/studio/models",
+        headers=auth_headers,
+        json={
+            "name": "Kimi K2",
+            "kind": "openai-compatible",
+            "base_url": "https://openrouter.ai/api/v1",
+            "model_name": "moonshotai/kimi-k2",
+            "api_key": "sk-test-secret",
+        },
+    )
+    assert provider_response.status_code == 201
+    provider = provider_response.json()
+    assert provider["name"] == "Kimi K2"
+    assert provider["api_key_prefix"] == "sk-test-secr"
+    assert "api_key" not in provider
+
+    agent_response = client.post(
+        "/studio/agents",
+        headers=auth_headers,
+        json={
+            "name": "Coder",
+            "role": "implementation",
+            "model_provider_id": provider["id"],
+            "system_prompt": "Use Laura memory before coding.",
+        },
+    )
+    assert agent_response.status_code == 201
+    agent = agent_response.json()
+    assert agent["name"] == "Coder"
+    assert agent["model_provider_id"] == provider["id"]
+
+    list_response = client.get("/studio/agents", headers=auth_headers)
+    assert list_response.status_code == 200
+    assert len(list_response.json()) == 1
+
+
 @pytest.mark.anyio
 async def test_mcp_token_verifier_returns_user_subject():
     client = TestClient(app)

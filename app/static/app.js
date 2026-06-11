@@ -5,6 +5,8 @@ const state = {
   projects: [],
   tasks: [],
   apiKeys: [],
+  modelProviders: [],
+  agents: [],
   selectedProjectId: null,
 };
 
@@ -27,6 +29,20 @@ const el = {
   refreshTasksButton: document.querySelector("#refreshTasksButton"),
   refreshKeysButton: document.querySelector("#refreshKeysButton"),
   apiKeyList: document.querySelector("#apiKeyList"),
+  refreshStudioButton: document.querySelector("#refreshStudioButton"),
+  modelForm: document.querySelector("#modelForm"),
+  modelNameInput: document.querySelector("#modelNameInput"),
+  modelKindInput: document.querySelector("#modelKindInput"),
+  modelBaseUrlInput: document.querySelector("#modelBaseUrlInput"),
+  modelNameValueInput: document.querySelector("#modelNameValueInput"),
+  modelApiKeyInput: document.querySelector("#modelApiKeyInput"),
+  modelList: document.querySelector("#modelList"),
+  agentForm: document.querySelector("#agentForm"),
+  agentNameInput: document.querySelector("#agentNameInput"),
+  agentRoleInput: document.querySelector("#agentRoleInput"),
+  agentModelInput: document.querySelector("#agentModelInput"),
+  agentPromptInput: document.querySelector("#agentPromptInput"),
+  agentList: document.querySelector("#agentList"),
   toast: document.querySelector("#toast"),
 };
 
@@ -162,6 +178,65 @@ function renderApiKeys() {
   }
 }
 
+function renderModelProviders() {
+  el.modelList.innerHTML = "";
+
+  if (!state.modelProviders.length) {
+    el.modelList.innerHTML = '<p class="hint">No model providers yet.</p>';
+  }
+
+  for (const provider of state.modelProviders) {
+    const item = document.createElement("article");
+    item.className = "item";
+    item.innerHTML = `
+      <div class="item-title">
+        <h3>${escapeHtml(provider.name)}</h3>
+        <span class="status-pill">${escapeHtml(provider.kind)}</span>
+      </div>
+      <p>Model: ${escapeHtml(provider.model_name)}</p>
+      <p>Base URL: ${escapeHtml(provider.base_url || "Provider default")}</p>
+      <p>Key: ${provider.api_key_prefix ? `${escapeHtml(provider.api_key_prefix)}...` : "Not stored"}</p>
+      <div class="row"><button type="button" class="danger">Remove</button></div>
+    `;
+    item.querySelector("button").addEventListener("click", () => deleteModelProvider(provider.id));
+    el.modelList.appendChild(item);
+  }
+
+  el.agentModelInput.innerHTML = '<option value="">No model selected</option>';
+  for (const provider of state.modelProviders) {
+    const option = document.createElement("option");
+    option.value = String(provider.id);
+    option.textContent = `${provider.name} (${provider.model_name})`;
+    el.agentModelInput.appendChild(option);
+  }
+}
+
+function renderAgents() {
+  el.agentList.innerHTML = "";
+
+  if (!state.agents.length) {
+    el.agentList.innerHTML = '<p class="hint">No agents yet.</p>';
+    return;
+  }
+
+  for (const agent of state.agents) {
+    const provider = state.modelProviders.find((item) => item.id === agent.model_provider_id);
+    const item = document.createElement("article");
+    item.className = "item";
+    item.innerHTML = `
+      <div class="item-title">
+        <h3>${escapeHtml(agent.name)}</h3>
+        <span class="status-pill">${escapeHtml(agent.role)}</span>
+      </div>
+      <p>Model: ${escapeHtml(provider ? provider.name : "No model selected")}</p>
+      <p>${escapeHtml(agent.system_prompt || "No system prompt")}</p>
+      <div class="row"><button type="button" class="danger">Remove</button></div>
+    `;
+    item.querySelector("button").addEventListener("click", () => deleteAgent(agent.id));
+    el.agentList.appendChild(item);
+  }
+}
+
 async function loadProjects() {
   state.projects = await api("/projects");
   if (!state.selectedProjectId && state.projects.length) {
@@ -186,6 +261,13 @@ async function loadApiKeys() {
   renderApiKeys();
 }
 
+async function loadStudio() {
+  state.modelProviders = await api("/studio/models");
+  state.agents = await api("/studio/agents");
+  renderModelProviders();
+  renderAgents();
+}
+
 async function refreshAll() {
   if (!state.apiKey) {
     setConnected(false);
@@ -198,6 +280,7 @@ async function refreshAll() {
   try {
     await loadProjects();
     await loadApiKeys();
+    await loadStudio();
     setConnected(true);
   } catch (error) {
     setConnected(false);
@@ -257,6 +340,52 @@ async function revokeApiKey(keyId) {
   await loadApiKeys();
 }
 
+async function createModelProvider(event) {
+  event.preventDefault();
+  await api("/studio/models", {
+    method: "POST",
+    body: JSON.stringify({
+      name: el.modelNameInput.value,
+      kind: el.modelKindInput.value,
+      base_url: el.modelBaseUrlInput.value || null,
+      model_name: el.modelNameValueInput.value,
+      api_key: el.modelApiKeyInput.value || null,
+    }),
+  });
+  el.modelForm.reset();
+  showToast("Model provider added");
+  await loadStudio();
+}
+
+async function deleteModelProvider(providerId) {
+  await api(`/studio/models/${providerId}`, { method: "DELETE" });
+  showToast("Model provider removed");
+  await loadStudio();
+}
+
+async function createAgent(event) {
+  event.preventDefault();
+  await api("/studio/agents", {
+    method: "POST",
+    body: JSON.stringify({
+      name: el.agentNameInput.value,
+      role: el.agentRoleInput.value,
+      model_provider_id: el.agentModelInput.value ? Number(el.agentModelInput.value) : null,
+      system_prompt: el.agentPromptInput.value || null,
+    }),
+  });
+  el.agentForm.reset();
+  el.agentRoleInput.value = "assistant";
+  showToast("Agent created");
+  await loadStudio();
+}
+
+async function deleteAgent(agentId) {
+  await api(`/studio/agents/${agentId}`, { method: "DELETE" });
+  showToast("Agent removed");
+  await loadStudio();
+}
+
 function escapeHtml(value) {
   return String(value)
     .replaceAll("&", "&amp;")
@@ -283,7 +412,10 @@ el.clearKeyButton.addEventListener("click", () => {
 el.refreshProjectsButton.addEventListener("click", loadProjects);
 el.refreshTasksButton.addEventListener("click", loadTasks);
 el.refreshKeysButton.addEventListener("click", loadApiKeys);
+el.refreshStudioButton.addEventListener("click", loadStudio);
 el.projectForm.addEventListener("submit", createProject);
 el.taskForm.addEventListener("submit", createTask);
+el.modelForm.addEventListener("submit", createModelProvider);
+el.agentForm.addEventListener("submit", createAgent);
 
 refreshAll();

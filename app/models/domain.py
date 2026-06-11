@@ -18,6 +18,15 @@ class TaskStatus(str, enum.Enum):
     complete = "complete"
 
 
+class ProviderKind(str, enum.Enum):
+    openai_compatible = "openai-compatible"
+    openai = "openai"
+    anthropic = "anthropic"
+    google = "google"
+    ollama = "ollama"
+    other = "other"
+
+
 class User(Base):
     __tablename__ = "users"
 
@@ -28,6 +37,8 @@ class User(Base):
 
     projects: Mapped[list["Project"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     api_keys: Mapped[list["ApiKey"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    model_providers: Mapped[list["ModelProvider"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    agents: Mapped[list["AgentRole"]] = relationship(back_populates="user", cascade="all, delete-orphan")
 
 
 class ApiKey(Base):
@@ -76,3 +87,46 @@ class Task(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
 
     project: Mapped[Project] = relationship(back_populates="tasks")
+
+
+class ModelProvider(Base):
+    __tablename__ = "model_providers"
+    __table_args__ = (UniqueConstraint("user_id", "name", name="uq_model_providers_user_name"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    name: Mapped[str] = mapped_column(String(120))
+    kind: Mapped[ProviderKind] = mapped_column(
+        Enum(ProviderKind, values_callable=lambda enum_cls: [member.value for member in enum_cls], native_enum=False),
+        default=ProviderKind.openai_compatible,
+    )
+    base_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    model_name: Mapped[str] = mapped_column(String(160))
+    api_key_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    api_key_prefix: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
+
+    user: Mapped[User] = relationship(back_populates="model_providers")
+    agents: Mapped[list["AgentRole"]] = relationship(back_populates="model_provider")
+
+
+class AgentRole(Base):
+    __tablename__ = "agent_roles"
+    __table_args__ = (UniqueConstraint("user_id", "name", name="uq_agent_roles_user_name"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    model_provider_id: Mapped[int | None] = mapped_column(
+        ForeignKey("model_providers.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    name: Mapped[str] = mapped_column(String(120))
+    role: Mapped[str] = mapped_column(String(120), default="assistant")
+    system_prompt: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
+
+    user: Mapped[User] = relationship(back_populates="agents")
+    model_provider: Mapped[ModelProvider | None] = relationship(back_populates="agents")

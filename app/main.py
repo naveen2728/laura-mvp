@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.api import api_keys, projects, tasks, users
+from app.api import api_keys, projects, studio, tasks, users
 from app.core.config import get_settings
 from app.db.session import Base, engine
 from app.mcp.server import mcp
@@ -31,6 +31,7 @@ app.include_router(users.router)
 app.include_router(api_keys.router)
 app.include_router(projects.router)
 app.include_router(tasks.router)
+app.include_router(studio.router)
 
 static_dir = Path(__file__).parent / "static"
 app.mount("/static", StaticFiles(directory=static_dir), name="static")

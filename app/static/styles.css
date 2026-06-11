@@ -123,6 +123,10 @@ select {
   grid-row: span 2;
 }
 
+.studio-panel {
+  grid-column: span 1;
+}
+
 .panel-header {
   align-items: flex-start;
   display: flex;
@@ -158,6 +162,12 @@ h2 {
 .stack {
   display: grid;
   gap: 11px;
+}
+
+.form-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 label {
@@ -377,5 +387,9 @@ button.danger:hover {
 
   .shell {
     padding: 12px;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
   }
 }
