@@ -80,6 +80,15 @@ button.ghost:hover,
   color: var(--ink);
 }
 
+.danger-button {
+  color: #fecdd3 !important;
+}
+
+.danger-button:hover {
+  background: rgba(251, 113, 133, 0.12) !important;
+  border-color: rgba(251, 113, 133, 0.35) !important;
+}
+
 .setup-link {
   width: 100%;
 }
@@ -359,6 +368,18 @@ select:focus {
   color: #f7fffb;
   font-size: 20px;
   line-height: 1.2;
+}
+
+.thread-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 9px;
+}
+
+.thread-actions button {
+  font-size: 12px;
+  min-height: 28px;
+  padding: 5px 9px;
 }
 
 .eyebrow {

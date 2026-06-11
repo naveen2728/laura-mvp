@@ -83,6 +83,9 @@ const el = {
   taskList: $("#taskList"),
   taskTitle: $("#taskTitle"),
   threadTitle: $("#threadTitle"),
+  renameThreadButton: $("#renameThreadButton"),
+  clearThreadButton: $("#clearThreadButton"),
+  deleteThreadButton: $("#deleteThreadButton"),
   projectNameInput: $("#projectNameInput"),
   projectDescriptionInput: $("#projectDescriptionInput"),
   createProjectButton: $("#createProjectButton"),
@@ -208,6 +211,38 @@ function createThread(shouldRender = true) {
   saveThreads();
   if (shouldRender) render();
   return thread;
+}
+
+function renameCurrentThread() {
+  const thread = currentThread();
+  const title = window.prompt("Thread name", thread.title || "New thread");
+  if (!title) return;
+  thread.title = title.trim().slice(0, 80) || "New thread";
+  thread.updatedAt = new Date().toISOString();
+  saveThreads();
+  render();
+}
+
+function clearCurrentThread() {
+  const thread = currentThread();
+  if (thread.messages.length && !window.confirm("Clear all messages in this thread?")) return;
+  thread.messages = [];
+  thread.updatedAt = new Date().toISOString();
+  saveThreads();
+  render();
+}
+
+function deleteCurrentThread() {
+  const thread = currentThread();
+  if (!window.confirm(`Delete "${thread.title || "New thread"}"?`)) return;
+  state.threads = state.threads.filter((item) => item.id !== thread.id);
+  if (!state.threads.length) {
+    createThread(false);
+  } else {
+    state.selectedThreadId = state.threads[0].id;
+  }
+  saveThreads();
+  render();
 }
 
 function addMessage(role, content, label) {
@@ -665,6 +700,9 @@ el.clearButton.addEventListener("click", () => {
 });
 el.refreshButton.addEventListener("click", refreshAll);
 el.newThreadButton.addEventListener("click", () => createThread(true));
+el.renameThreadButton.addEventListener("click", renameCurrentThread);
+el.clearThreadButton.addEventListener("click", clearCurrentThread);
+el.deleteThreadButton.addEventListener("click", deleteCurrentThread);
 el.createProjectButton.addEventListener("click", () => createProject().catch((error) => toast(error.message)));
 el.createTaskButton.addEventListener("click", () => createTask().catch((error) => toast(error.message)));
 el.addModelButton.addEventListener("click", () => addModel().catch((error) => toast(error.message)));
