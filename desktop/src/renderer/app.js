@@ -42,6 +42,7 @@ const state = {
   workspaceRoot: null,
   workspaceFiles: [],
   activeFilePath: null,
+  pendingEdit: null,
   lastMemory: ""
 };
 
@@ -88,6 +89,10 @@ const el = {
   fileList: $("#fileList"),
   activeFileTitle: $("#activeFileTitle"),
   fileEditorInput: $("#fileEditorInput"),
+  diffReviewPanel: $("#diffReviewPanel"),
+  diffPreview: $("#diffPreview"),
+  acceptEditButton: $("#acceptEditButton"),
+  rejectEditButton: $("#rejectEditButton"),
   saveFileButton: $("#saveFileButton"),
   insertFileContextButton: $("#insertFileContextButton"),
   proposeFileEditButton: $("#proposeFileEditButton"),
@@ -441,6 +446,36 @@ function renderWorkspace() {
   }
 }
 
+function clearPendingEdit() {
+  state.pendingEdit = null;
+  el.diffReviewPanel.classList.add("hidden");
+  el.diffPreview.textContent = "";
+}
+
+function buildLineDiff(before, after) {
+  const beforeLines = before.split("\n");
+  const afterLines = after.split("\n");
+  const max = Math.max(beforeLines.length, afterLines.length);
+  const lines = [];
+  for (let index = 0; index < max; index += 1) {
+    const oldLine = beforeLines[index];
+    const newLine = afterLines[index];
+    if (oldLine === newLine) {
+      if (oldLine !== undefined) lines.push(`  ${oldLine}`);
+    } else {
+      if (oldLine !== undefined) lines.push(`- ${oldLine}`);
+      if (newLine !== undefined) lines.push(`+ ${newLine}`);
+    }
+  }
+  return lines.join("\n");
+}
+
+function showPendingEdit(edit) {
+  state.pendingEdit = edit;
+  el.diffPreview.textContent = buildLineDiff(edit.originalContent, edit.proposedContent);
+  el.diffReviewPanel.classList.remove("hidden");
+}
+
 function renderConfigurationSummary() {
   el.configurationSummary.innerHTML = `
     <article class="summary-item">
@@ -694,6 +729,7 @@ async function openWorkspace() {
   state.workspaceRoot = workspace.root;
   state.workspaceFiles = workspace.files;
   state.activeFilePath = null;
+  clearPendingEdit();
   el.fileEditorInput.value = "";
   el.activeFileTitle.textContent = "File";
   renderWorkspace();
@@ -703,6 +739,7 @@ async function openWorkspace() {
 async function openWorkspaceFile(filePath) {
   const file = await window.lauraDesktop.readFile(filePath);
   state.activeFilePath = file.path;
+  clearPendingEdit();
   el.activeFileTitle.textContent = file.path;
   el.fileEditorInput.value = file.content;
   renderWorkspace();
@@ -715,6 +752,7 @@ async function saveWorkspaceFile() {
     content: el.fileEditorInput.value
   });
   state.workspaceFiles = result.files;
+  clearPendingEdit();
   renderWorkspace();
   toast("File saved");
 }
@@ -793,9 +831,29 @@ async function proposeFileEdit() {
 
   state.activeFilePath = edit.path;
   el.activeFileTitle.textContent = edit.path;
-  el.fileEditorInput.value = edit.content;
+  showPendingEdit({
+    path: edit.path,
+    originalContent: el.fileEditorInput.value,
+    proposedContent: edit.content,
+  });
   addMessage("assistant", `Proposed edit for ${edit.path}\n${edit.summary || "Review it in the file panel, then Save."}`, `${result.agent_name} - ${result.model_name}`);
   toast("Edit preview ready");
+}
+
+function acceptPendingEdit() {
+  if (!state.pendingEdit) return;
+  state.activeFilePath = state.pendingEdit.path;
+  el.activeFileTitle.textContent = state.pendingEdit.path;
+  el.fileEditorInput.value = state.pendingEdit.proposedContent;
+  clearPendingEdit();
+  toast("Edit accepted");
+}
+
+function rejectPendingEdit() {
+  if (!state.pendingEdit) return;
+  el.fileEditorInput.value = state.pendingEdit.originalContent;
+  clearPendingEdit();
+  toast("Edit rejected");
 }
 
 async function addModel() {
@@ -987,6 +1045,8 @@ el.createFileButton.addEventListener("click", () => createWorkspaceFile().catch(
 el.saveFileButton.addEventListener("click", () => saveWorkspaceFile().catch((error) => toast(error.message)));
 el.insertFileContextButton.addEventListener("click", insertFileContext);
 el.proposeFileEditButton.addEventListener("click", () => proposeFileEdit().catch((error) => toast(error.message)));
+el.acceptEditButton.addEventListener("click", acceptPendingEdit);
+el.rejectEditButton.addEventListener("click", rejectPendingEdit);
 el.newThreadButton.addEventListener("click", () => createThread(true).catch((error) => toast(error.message)));
 el.renameThreadButton.addEventListener("click", () => renameCurrentThread().catch((error) => toast(error.message)));
 el.clearThreadButton.addEventListener("click", () => clearCurrentThread().catch((error) => toast(error.message)));

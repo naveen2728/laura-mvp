@@ -522,6 +522,18 @@ select:focus {
   grid-template-columns: 1fr 1fr;
 }
 
+.diff-review {
+  display: grid;
+  gap: 6px;
+}
+
+.diff-review pre {
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  font-size: 11px;
+  max-height: 170px;
+  overflow: auto;
+}
+
 .muted-line {
   color: var(--muted);
   font-size: 11px;
