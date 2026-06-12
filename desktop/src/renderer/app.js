@@ -43,6 +43,7 @@ const state = {
   workspaceFiles: [],
   activeFilePath: null,
   selectedContextPaths: [],
+  fileSearch: "",
   pendingEdit: null,
   pendingEdits: [],
   activePendingEditIndex: 0,
@@ -89,8 +90,10 @@ const el = {
   workspaceRootLabel: $("#workspaceRootLabel"),
   newFilePathInput: $("#newFilePathInput"),
   createFileButton: $("#createFileButton"),
+  fileSearchInput: $("#fileSearchInput"),
   fileList: $("#fileList"),
   selectedFilesLabel: $("#selectedFilesLabel"),
+  selectVisibleFilesButton: $("#selectVisibleFilesButton"),
   clearContextFilesButton: $("#clearContextFilesButton"),
   activeFileTitle: $("#activeFileTitle"),
   fileEditorInput: $("#fileEditorInput"),
@@ -439,6 +442,7 @@ function render() {
 function renderWorkspace() {
   el.workspaceRootLabel.textContent = state.workspaceRoot || "No folder selected";
   const contextCount = state.selectedContextPaths.length;
+  const visibleFiles = filteredWorkspaceFiles();
   el.selectedFilesLabel.textContent = contextCount
     ? `${contextCount} context file${contextCount === 1 ? "" : "s"}`
     : "No context files";
@@ -447,7 +451,11 @@ function renderWorkspace() {
     el.fileList.innerHTML = '<article class="item"><p>No files loaded.</p></article>';
     return;
   }
-  for (const file of state.workspaceFiles) {
+  if (!visibleFiles.length) {
+    el.fileList.innerHTML = '<article class="item"><p>No files match.</p></article>';
+    return;
+  }
+  for (const file of visibleFiles) {
     const item = document.createElement("article");
     const selected = state.selectedContextPaths.includes(file);
     item.className = `item file-item ${file === state.activeFilePath ? "active" : ""} ${selected ? "selected-context" : ""}`;
@@ -505,6 +513,24 @@ function showPendingEditAt(index) {
   el.diffPreview.textContent = buildLineDiff(edit.originalContent, edit.proposedContent);
   el.diffReviewPanel.classList.remove("hidden");
   renderWorkspace();
+}
+
+function filteredWorkspaceFiles() {
+  const query = state.fileSearch.trim().toLowerCase();
+  if (!query) return state.workspaceFiles;
+  const terms = query.split(/\s+/).filter(Boolean);
+  return state.workspaceFiles.filter((file) => {
+    const haystack = file.toLowerCase();
+    return terms.every((term) => haystack.includes(term));
+  });
+}
+
+function selectVisibleContextFiles() {
+  const visibleFiles = filteredWorkspaceFiles();
+  if (!visibleFiles.length) return toast("No visible files to add");
+  state.selectedContextPaths = [...new Set([...state.selectedContextPaths, ...visibleFiles])];
+  renderWorkspace();
+  toast(`Added ${visibleFiles.length} visible file${visibleFiles.length === 1 ? "" : "s"}`);
 }
 
 function showPendingEdits(edits) {
@@ -783,6 +809,8 @@ async function openWorkspace() {
   state.workspaceFiles = workspace.files;
   state.activeFilePath = null;
   state.selectedContextPaths = [];
+  state.fileSearch = "";
+  el.fileSearchInput.value = "";
   clearPendingEdit();
   el.fileEditorInput.value = "";
   el.activeFileTitle.textContent = "File";
@@ -1164,6 +1192,11 @@ el.clearButton.addEventListener("click", () => {
 el.refreshButton.addEventListener("click", refreshAll);
 el.openWorkspaceButton.addEventListener("click", () => openWorkspace().catch((error) => toast(error.message)));
 el.createFileButton.addEventListener("click", () => createWorkspaceFile().catch((error) => toast(error.message)));
+el.fileSearchInput.addEventListener("input", () => {
+  state.fileSearch = el.fileSearchInput.value;
+  renderWorkspace();
+});
+el.selectVisibleFilesButton.addEventListener("click", selectVisibleContextFiles);
 el.saveFileButton.addEventListener("click", () => saveWorkspaceFile().catch((error) => toast(error.message)));
 el.insertFileContextButton.addEventListener("click", () => insertFileContext().catch((error) => toast(error.message)));
 el.proposeFileEditButton.addEventListener("click", () => proposeFileEdit().catch((error) => toast(error.message)));

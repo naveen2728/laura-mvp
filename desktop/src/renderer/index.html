@@ -48,9 +48,13 @@
           <input id="newFilePathInput" placeholder="path/to/file.txt" />
           <button id="createFileButton" class="icon-button">Create</button>
         </div>
+        <input id="fileSearchInput" class="file-search" placeholder="Search files" />
         <div class="context-strip">
           <span id="selectedFilesLabel">No context files</span>
-          <button id="clearContextFilesButton" class="ghost">Clear</button>
+          <div class="context-actions">
+            <button id="selectVisibleFilesButton" class="ghost">Add shown</button>
+            <button id="clearContextFilesButton" class="ghost">Clear</button>
+          </div>
         </div>
         <div id="fileList" class="stack-list file-list"></div>
       </section>

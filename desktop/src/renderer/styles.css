@@ -290,6 +290,10 @@ select:focus {
   margin-bottom: 7px;
 }
 
+.file-search {
+  margin-bottom: 7px;
+}
+
 .tasks-section .stack-list {
   max-height: 34vh;
   overflow: auto;
@@ -345,7 +349,7 @@ select:focus {
   align-items: center;
   display: grid;
   gap: 6px;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   margin-bottom: 7px;
 }
 
@@ -361,6 +365,11 @@ select:focus {
   font-size: 10px;
   min-height: 24px;
   padding: 3px 7px;
+}
+
+.context-actions {
+  display: flex;
+  gap: 4px;
 }
 
 .item-title {
