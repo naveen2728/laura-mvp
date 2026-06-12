@@ -90,6 +90,7 @@ const el = {
   fileEditorInput: $("#fileEditorInput"),
   saveFileButton: $("#saveFileButton"),
   insertFileContextButton: $("#insertFileContextButton"),
+  proposeFileEditButton: $("#proposeFileEditButton"),
   newThreadButton: $("#newThreadButton"),
   threadList: $("#threadList"),
   projectList: $("#projectList"),
@@ -740,6 +741,63 @@ function insertFileContext() {
   el.composerInput.focus();
 }
 
+function parseEditResponse(output) {
+  const trimmed = output.trim();
+  const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  const candidate = fenced ? fenced[1].trim() : trimmed;
+  return JSON.parse(candidate);
+}
+
+async function proposeFileEdit() {
+  if (!state.activeFilePath) return toast("Open a file first");
+  if (!el.runProjectInput.value || !el.runAgentInput.value) return toast("Choose a project and agent first");
+  const instruction = el.composerInput.value.trim() || "Improve this file while preserving its purpose.";
+  const prompt = [
+    "Return ONLY valid JSON with this exact shape:",
+    "{\"path\":\"relative/file/path\",\"content\":\"complete new file content\",\"summary\":\"short summary\"}",
+    "Do not include markdown or commentary.",
+    "",
+    `File path: ${state.activeFilePath}`,
+    "Current file content:",
+    "```",
+    el.fileEditorInput.value,
+    "```",
+    "",
+    `Requested change: ${instruction}`,
+  ].join("\n");
+
+  toast("Asking agent for edit");
+  const result = await request("/studio/runs", {
+    method: "POST",
+    body: {
+      project_id: Number(el.runProjectInput.value),
+      agent_id: Number(el.runAgentInput.value),
+      thread_id: state.remoteThreads ? Number(currentThread().id) : null,
+      prompt
+    }
+  });
+
+  let edit;
+  try {
+    edit = parseEditResponse(result.output);
+  } catch {
+    addMessage("assistant", result.output, `${result.agent_name} - ${result.model_name}`);
+    toast("Agent did not return JSON");
+    return;
+  }
+
+  if (!edit.path || typeof edit.content !== "string") {
+    toast("Edit response missing path or content");
+    return;
+  }
+
+  state.activeFilePath = edit.path;
+  el.activeFileTitle.textContent = edit.path;
+  el.fileEditorInput.value = edit.content;
+  addMessage("assistant", `Proposed edit for ${edit.path}\n${edit.summary || "Review it in the file panel, then Save."}`, `${result.agent_name} - ${result.model_name}`);
+  toast("Edit preview ready");
+}
+
 async function addModel() {
   await request("/studio/models", {
     method: "POST",
@@ -928,6 +986,7 @@ el.openWorkspaceButton.addEventListener("click", () => openWorkspace().catch((er
 el.createFileButton.addEventListener("click", () => createWorkspaceFile().catch((error) => toast(error.message)));
 el.saveFileButton.addEventListener("click", () => saveWorkspaceFile().catch((error) => toast(error.message)));
 el.insertFileContextButton.addEventListener("click", insertFileContext);
+el.proposeFileEditButton.addEventListener("click", () => proposeFileEdit().catch((error) => toast(error.message)));
 el.newThreadButton.addEventListener("click", () => createThread(true).catch((error) => toast(error.message)));
 el.renameThreadButton.addEventListener("click", () => renameCurrentThread().catch((error) => toast(error.message)));
 el.clearThreadButton.addEventListener("click", () => clearCurrentThread().catch((error) => toast(error.message)));

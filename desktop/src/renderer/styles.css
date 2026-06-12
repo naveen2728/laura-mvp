@@ -516,6 +516,12 @@ select:focus {
   white-space: pre;
 }
 
+.file-action-row {
+  display: grid;
+  gap: 6px;
+  grid-template-columns: 1fr 1fr;
+}
+
 .muted-line {
   color: var(--muted);
   font-size: 11px;
