@@ -48,6 +48,7 @@ const state = {
   pendingEdits: [],
   activePendingEditIndex: 0,
   commandRunning: false,
+  lastCommandResult: null,
   lastMemory: ""
 };
 
@@ -108,6 +109,7 @@ const el = {
   proposeFileEditButton: $("#proposeFileEditButton"),
   commandInput: $("#commandInput"),
   runCommandButton: $("#runCommandButton"),
+  insertCommandOutputButton: $("#insertCommandOutputButton"),
   commandOutput: $("#commandOutput"),
   newThreadButton: $("#newThreadButton"),
   threadList: $("#threadList"),
@@ -1008,6 +1010,7 @@ async function runWorkspaceCommand() {
 
   try {
     const result = await window.lauraDesktop.runCommand({ command });
+    state.lastCommandResult = result;
     const sections = [
       `> ${result.command}`,
       `exit ${result.exitCode}`,
@@ -1025,6 +1028,24 @@ async function runWorkspaceCommand() {
     el.runCommandButton.disabled = false;
     el.runCommandButton.textContent = "Run";
   }
+}
+
+function insertCommandOutput() {
+  if (!state.lastCommandResult) return toast("Run a command first");
+  const result = state.lastCommandResult;
+  const snippet = [
+    "Command output:",
+    "```",
+    `> ${result.command}`,
+    `exit ${result.exitCode}`,
+    result.stdout ? `stdout\n${result.stdout.trimEnd()}` : "",
+    result.stderr ? `stderr\n${result.stderr.trimEnd()}` : "",
+    "```",
+    "",
+    result.exitCode === 0 ? "Summarize this result." : "Explain why this failed and propose a fix."
+  ].filter((line) => line !== "").join("\n");
+  el.composerInput.value = `${el.composerInput.value.trim()}\n\n${snippet}`.trim();
+  el.composerInput.focus();
 }
 
 function rejectPendingEdit() {
@@ -1237,6 +1258,7 @@ el.proposeFileEditButton.addEventListener("click", () => proposeFileEdit().catch
 el.acceptEditButton.addEventListener("click", () => acceptPendingEdit().catch((error) => toast(error.message)));
 el.rejectEditButton.addEventListener("click", rejectPendingEdit);
 el.runCommandButton.addEventListener("click", () => runWorkspaceCommand().catch((error) => toast(error.message)));
+el.insertCommandOutputButton.addEventListener("click", insertCommandOutput);
 el.commandInput.addEventListener("keydown", (event) => {
   if (event.key === "Enter") {
     event.preventDefault();

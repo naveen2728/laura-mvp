@@ -565,6 +565,10 @@ select:focus {
   min-height: 190px;
 }
 
+.terminal-card button {
+  width: 100%;
+}
+
 .terminal-card pre {
   color: #d7dde8;
   font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
