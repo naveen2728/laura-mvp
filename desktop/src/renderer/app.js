@@ -1,5 +1,6 @@
 const DEFAULT_BASE_URL = "https://web-production-57e37.up.railway.app";
 const statusOptions = ["todo", "in-progress", "in-review", "complete"];
+const commandPresets = ["npm test", "npm run build", "npm run check", ".\\.venv\\Scripts\\python.exe -m pytest -q"];
 const legacyMessages = JSON.parse(localStorage.getItem("laura_desktop_messages") || "[]");
 const providerPresets = {
   openrouter: {
@@ -49,6 +50,7 @@ const state = {
   activePendingEditIndex: 0,
   commandRunning: false,
   lastCommandResult: null,
+  commandHistory: JSON.parse(localStorage.getItem("laura_desktop_command_history") || "[]"),
   lastMemory: ""
 };
 
@@ -108,6 +110,8 @@ const el = {
   insertFileContextButton: $("#insertFileContextButton"),
   proposeFileEditButton: $("#proposeFileEditButton"),
   commandInput: $("#commandInput"),
+  commandPresets: $("#commandPresets"),
+  commandHistoryInput: $("#commandHistoryInput"),
   runCommandButton: $("#runCommandButton"),
   insertCommandOutputButton: $("#insertCommandOutputButton"),
   commandOutput: $("#commandOutput"),
@@ -434,6 +438,7 @@ async function loadTasks() {
 
 function render() {
   renderWorkspace();
+  renderCommandTools();
   renderThreads();
   renderProjects();
   renderTasks();
@@ -443,6 +448,29 @@ function render() {
   renderRunOptions();
   renderMessages();
   renderMemory();
+}
+
+function renderCommandTools() {
+  el.commandPresets.innerHTML = "";
+  for (const command of commandPresets) {
+    const button = document.createElement("button");
+    button.className = "ghost";
+    button.textContent = command;
+    button.title = command;
+    button.addEventListener("click", () => {
+      el.commandInput.value = command;
+      el.commandInput.focus();
+    });
+    el.commandPresets.appendChild(button);
+  }
+
+  el.commandHistoryInput.innerHTML = '<option value="">Recent commands</option>';
+  for (const command of state.commandHistory) {
+    const option = document.createElement("option");
+    option.value = command;
+    option.textContent = command;
+    el.commandHistoryInput.appendChild(option);
+  }
 }
 
 function renderWorkspace() {
@@ -1003,6 +1031,7 @@ async function runWorkspaceCommand() {
   if (state.commandRunning) return;
   const command = el.commandInput.value.trim();
   if (!command) return toast("Enter a command");
+  saveCommandHistory(command);
   state.commandRunning = true;
   el.runCommandButton.disabled = true;
   el.runCommandButton.textContent = "Running";
@@ -1028,6 +1057,12 @@ async function runWorkspaceCommand() {
     el.runCommandButton.disabled = false;
     el.runCommandButton.textContent = "Run";
   }
+}
+
+function saveCommandHistory(command) {
+  state.commandHistory = [command, ...state.commandHistory.filter((item) => item !== command)].slice(0, 12);
+  localStorage.setItem("laura_desktop_command_history", JSON.stringify(state.commandHistory));
+  renderCommandTools();
 }
 
 function insertCommandOutput() {
@@ -1259,6 +1294,12 @@ el.acceptEditButton.addEventListener("click", () => acceptPendingEdit().catch((e
 el.rejectEditButton.addEventListener("click", rejectPendingEdit);
 el.runCommandButton.addEventListener("click", () => runWorkspaceCommand().catch((error) => toast(error.message)));
 el.insertCommandOutputButton.addEventListener("click", insertCommandOutput);
+el.commandHistoryInput.addEventListener("change", () => {
+  if (!el.commandHistoryInput.value) return;
+  el.commandInput.value = el.commandHistoryInput.value;
+  el.commandHistoryInput.value = "";
+  el.commandInput.focus();
+});
 el.commandInput.addEventListener("keydown", (event) => {
   if (event.key === "Enter") {
     event.preventDefault();
@@ -1302,4 +1343,5 @@ el.runProjectInput.addEventListener("change", async () => {
   renderMemory();
 });
 
+renderCommandTools();
 refreshAll();

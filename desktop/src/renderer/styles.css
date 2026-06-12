@@ -569,6 +569,22 @@ select:focus {
   width: 100%;
 }
 
+.command-presets {
+  display: grid;
+  gap: 5px;
+  grid-template-columns: 1fr 1fr;
+}
+
+.command-presets button {
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  font-size: 10px;
+  justify-content: flex-start;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .terminal-card pre {
   color: #d7dde8;
   font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
