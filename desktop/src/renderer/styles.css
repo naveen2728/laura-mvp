@@ -274,12 +274,12 @@ select:focus {
 }
 
 .files-section {
-  max-height: 220px;
+  max-height: 260px;
   overflow: hidden;
 }
 
 .files-section .file-list {
-  max-height: 150px;
+  max-height: 170px;
   overflow: auto;
 }
 
@@ -312,6 +312,55 @@ select:focus {
 .file-item h4 {
   font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
   font-size: 11px;
+}
+
+.file-open-button {
+  border: 0;
+  display: block;
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  font-size: 11px;
+  justify-content: flex-start;
+  min-height: 22px;
+  min-width: 0;
+  overflow: hidden;
+  padding: 0;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
+}
+
+.context-toggle {
+  flex: 0 0 auto;
+  font-size: 10px;
+  min-height: 24px;
+  padding: 3px 7px;
+}
+
+.selected-context {
+  border-color: rgba(138, 180, 248, 0.55);
+}
+
+.context-strip {
+  align-items: center;
+  display: grid;
+  gap: 6px;
+  grid-template-columns: 1fr auto;
+  margin-bottom: 7px;
+}
+
+.context-strip span {
+  color: var(--muted);
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.context-strip button {
+  font-size: 10px;
+  min-height: 24px;
+  padding: 3px 7px;
 }
 
 .item-title {
@@ -525,6 +574,14 @@ select:focus {
 .diff-review {
   display: grid;
   gap: 6px;
+}
+
+.tight-title {
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.tight-title select {
+  min-height: 28px;
 }
 
 .diff-review pre {

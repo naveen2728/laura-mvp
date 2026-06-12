@@ -48,6 +48,10 @@
           <input id="newFilePathInput" placeholder="path/to/file.txt" />
           <button id="createFileButton" class="icon-button">Create</button>
         </div>
+        <div class="context-strip">
+          <span id="selectedFilesLabel">No context files</span>
+          <button id="clearContextFilesButton" class="ghost">Clear</button>
+        </div>
         <div id="fileList" class="stack-list file-list"></div>
       </section>
 
@@ -125,6 +129,10 @@
           <button id="proposeFileEditButton" class="ghost">Ask edit</button>
         </div>
         <div id="diffReviewPanel" class="diff-review hidden">
+          <div class="section-title tight-title">
+            <span>Proposed edits</span>
+            <select id="editProposalInput" aria-label="Proposed edit"></select>
+          </div>
           <div class="file-action-row">
             <button id="acceptEditButton">Accept</button>
             <button id="rejectEditButton" class="ghost">Reject</button>

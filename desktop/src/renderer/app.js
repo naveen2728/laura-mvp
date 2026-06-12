@@ -42,7 +42,10 @@ const state = {
   workspaceRoot: null,
   workspaceFiles: [],
   activeFilePath: null,
+  selectedContextPaths: [],
   pendingEdit: null,
+  pendingEdits: [],
+  activePendingEditIndex: 0,
   lastMemory: ""
 };
 
@@ -87,10 +90,13 @@ const el = {
   newFilePathInput: $("#newFilePathInput"),
   createFileButton: $("#createFileButton"),
   fileList: $("#fileList"),
+  selectedFilesLabel: $("#selectedFilesLabel"),
+  clearContextFilesButton: $("#clearContextFilesButton"),
   activeFileTitle: $("#activeFileTitle"),
   fileEditorInput: $("#fileEditorInput"),
   diffReviewPanel: $("#diffReviewPanel"),
   diffPreview: $("#diffPreview"),
+  editProposalInput: $("#editProposalInput"),
   acceptEditButton: $("#acceptEditButton"),
   rejectEditButton: $("#rejectEditButton"),
   saveFileButton: $("#saveFileButton"),
@@ -432,6 +438,10 @@ function render() {
 
 function renderWorkspace() {
   el.workspaceRootLabel.textContent = state.workspaceRoot || "No folder selected";
+  const contextCount = state.selectedContextPaths.length;
+  el.selectedFilesLabel.textContent = contextCount
+    ? `${contextCount} context file${contextCount === 1 ? "" : "s"}`
+    : "No context files";
   el.fileList.innerHTML = "";
   if (!state.workspaceFiles.length) {
     el.fileList.innerHTML = '<article class="item"><p>No files loaded.</p></article>';
@@ -439,17 +449,30 @@ function renderWorkspace() {
   }
   for (const file of state.workspaceFiles) {
     const item = document.createElement("article");
-    item.className = `item file-item ${file === state.activeFilePath ? "active" : ""}`;
-    item.innerHTML = `<div class="item-title"><h4>${escapeHtml(file)}</h4></div>`;
-    item.addEventListener("click", () => openWorkspaceFile(file).catch((error) => toast(error.message)));
+    const selected = state.selectedContextPaths.includes(file);
+    item.className = `item file-item ${file === state.activeFilePath ? "active" : ""} ${selected ? "selected-context" : ""}`;
+    item.innerHTML = `
+      <div class="item-title">
+        <button class="file-open-button ghost" title="Open file">${escapeHtml(file)}</button>
+        <button class="context-toggle ${selected ? "" : "ghost"}" title="Use as context">${selected ? "Context" : "Add"}</button>
+      </div>
+    `;
+    item.querySelector(".file-open-button").addEventListener("click", () => openWorkspaceFile(file).catch((error) => toast(error.message)));
+    item.querySelector(".context-toggle").addEventListener("click", (event) => {
+      event.stopPropagation();
+      toggleContextFile(file);
+    });
     el.fileList.appendChild(item);
   }
 }
 
 function clearPendingEdit() {
   state.pendingEdit = null;
+  state.pendingEdits = [];
+  state.activePendingEditIndex = 0;
   el.diffReviewPanel.classList.add("hidden");
   el.diffPreview.textContent = "";
+  el.editProposalInput.innerHTML = "";
 }
 
 function buildLineDiff(before, after) {
@@ -470,10 +493,40 @@ function buildLineDiff(before, after) {
   return lines.join("\n");
 }
 
-function showPendingEdit(edit) {
+function showPendingEditAt(index) {
+  const edit = state.pendingEdits[index];
+  if (!edit) return;
+  state.activePendingEditIndex = index;
   state.pendingEdit = edit;
+  state.activeFilePath = edit.path;
+  el.activeFileTitle.textContent = edit.path;
+  el.fileEditorInput.value = edit.originalContent;
+  el.editProposalInput.value = String(index);
   el.diffPreview.textContent = buildLineDiff(edit.originalContent, edit.proposedContent);
   el.diffReviewPanel.classList.remove("hidden");
+  renderWorkspace();
+}
+
+function showPendingEdits(edits) {
+  state.pendingEdits = edits;
+  state.activePendingEditIndex = 0;
+  el.editProposalInput.innerHTML = "";
+  edits.forEach((edit, index) => {
+    const option = document.createElement("option");
+    option.value = String(index);
+    option.textContent = `${index + 1}. ${edit.path}`;
+    el.editProposalInput.appendChild(option);
+  });
+  showPendingEditAt(0);
+}
+
+function toggleContextFile(filePath) {
+  if (state.selectedContextPaths.includes(filePath)) {
+    state.selectedContextPaths = state.selectedContextPaths.filter((item) => item !== filePath);
+  } else {
+    state.selectedContextPaths = [...state.selectedContextPaths, filePath];
+  }
+  renderWorkspace();
 }
 
 function renderConfigurationSummary() {
@@ -729,6 +782,7 @@ async function openWorkspace() {
   state.workspaceRoot = workspace.root;
   state.workspaceFiles = workspace.files;
   state.activeFilePath = null;
+  state.selectedContextPaths = [];
   clearPendingEdit();
   el.fileEditorInput.value = "";
   el.activeFileTitle.textContent = "File";
@@ -767,14 +821,15 @@ async function createWorkspaceFile() {
   toast("File created");
 }
 
-function insertFileContext() {
-  if (!state.activeFilePath) return toast("Open a file first");
-  const snippet = [
-    `File: ${state.activeFilePath}`,
+async function insertFileContext() {
+  const contextFiles = await readContextFiles();
+  if (!contextFiles.length) return toast("Open a file first");
+  const snippet = contextFiles.map((file) => [
+    `File: ${file.path}`,
     "```",
-    el.fileEditorInput.value,
+    file.content,
     "```",
-  ].join("\n");
+  ].join("\n")).join("\n\n");
   el.composerInput.value = `${el.composerInput.value.trim()}\n\n${snippet}`.trim();
   el.composerInput.focus();
 }
@@ -783,23 +838,72 @@ function parseEditResponse(output) {
   const trimmed = output.trim();
   const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
   const candidate = fenced ? fenced[1].trim() : trimmed;
-  return JSON.parse(candidate);
+  const parsed = JSON.parse(candidate);
+  if (Array.isArray(parsed)) return { edits: parsed };
+  if (Array.isArray(parsed.edits)) return parsed;
+  return { edits: [parsed] };
+}
+
+async function readContextFiles() {
+  const paths = state.selectedContextPaths.length
+    ? state.selectedContextPaths
+    : state.activeFilePath
+      ? [state.activeFilePath]
+      : [];
+  const uniquePaths = [...new Set(paths)];
+  const files = [];
+  for (const filePath of uniquePaths) {
+    if (filePath === state.activeFilePath) {
+      files.push({ path: filePath, content: el.fileEditorInput.value });
+    } else {
+      files.push(await window.lauraDesktop.readFile(filePath));
+    }
+  }
+  return files;
+}
+
+async function normalizeProposedEdits(rawEdits, contextFiles) {
+  const originals = new Map(contextFiles.map((file) => [file.path, file.content]));
+  const normalized = [];
+  for (const rawEdit of rawEdits) {
+    if (!rawEdit.path || typeof rawEdit.content !== "string") continue;
+    let originalContent = originals.get(rawEdit.path);
+    if (originalContent === undefined) {
+      try {
+        originalContent = (await window.lauraDesktop.readFile(rawEdit.path)).content;
+      } catch {
+        originalContent = "";
+      }
+    }
+    normalized.push({
+      path: rawEdit.path,
+      originalContent,
+      proposedContent: rawEdit.content,
+      summary: rawEdit.summary || "Review it in the file panel."
+    });
+  }
+  return normalized;
 }
 
 async function proposeFileEdit() {
   if (!state.activeFilePath) return toast("Open a file first");
   if (!el.runProjectInput.value || !el.runAgentInput.value) return toast("Choose a project and agent first");
+  const contextFiles = await readContextFiles();
   const instruction = el.composerInput.value.trim() || "Improve this file while preserving its purpose.";
+  const fileBlocks = contextFiles.map((file) => [
+    `File path: ${file.path}`,
+    "```",
+    file.content,
+    "```"
+  ].join("\n")).join("\n\n");
   const prompt = [
     "Return ONLY valid JSON with this exact shape:",
-    "{\"path\":\"relative/file/path\",\"content\":\"complete new file content\",\"summary\":\"short summary\"}",
-    "Do not include markdown or commentary.",
+    "{\"edits\":[{\"path\":\"relative/file/path\",\"content\":\"complete new file content\",\"summary\":\"short summary\"}]}",
+    "You may return one or more edits. Only include files that should change.",
+    "Do not include markdown, comments outside JSON, or partial patches.",
     "",
-    `File path: ${state.activeFilePath}`,
-    "Current file content:",
-    "```",
-    el.fileEditorInput.value,
-    "```",
+    "Workspace files provided as context:",
+    fileBlocks,
     "",
     `Requested change: ${instruction}`,
   ].join("\n");
@@ -815,45 +919,63 @@ async function proposeFileEdit() {
     }
   });
 
-  let edit;
+  let parsed;
   try {
-    edit = parseEditResponse(result.output);
+    parsed = parseEditResponse(result.output);
   } catch {
     addMessage("assistant", result.output, `${result.agent_name} - ${result.model_name}`);
     toast("Agent did not return JSON");
     return;
   }
 
-  if (!edit.path || typeof edit.content !== "string") {
-    toast("Edit response missing path or content");
+  const edits = await normalizeProposedEdits(parsed.edits, contextFiles);
+  if (!edits.length) {
+    toast("Edit response had no usable edits");
     return;
   }
 
-  state.activeFilePath = edit.path;
-  el.activeFileTitle.textContent = edit.path;
-  showPendingEdit({
-    path: edit.path,
-    originalContent: el.fileEditorInput.value,
-    proposedContent: edit.content,
-  });
-  addMessage("assistant", `Proposed edit for ${edit.path}\n${edit.summary || "Review it in the file panel, then Save."}`, `${result.agent_name} - ${result.model_name}`);
-  toast("Edit preview ready");
+  state.activeFilePath = edits[0].path;
+  el.activeFileTitle.textContent = edits[0].path;
+  el.fileEditorInput.value = edits[0].originalContent;
+  showPendingEdits(edits);
+  const summary = edits.map((edit) => `- ${edit.path}: ${edit.summary}`).join("\n");
+  addMessage("assistant", `Proposed ${edits.length} file edit${edits.length === 1 ? "" : "s"}:\n${summary}`, `${result.agent_name} - ${result.model_name}`);
+  toast(`${edits.length} edit preview${edits.length === 1 ? "" : "s"} ready`);
 }
 
-function acceptPendingEdit() {
+async function acceptPendingEdit() {
   if (!state.pendingEdit) return;
-  state.activeFilePath = state.pendingEdit.path;
-  el.activeFileTitle.textContent = state.pendingEdit.path;
+  const acceptedPath = state.pendingEdit.path;
+  const result = await window.lauraDesktop.writeFile({
+    path: acceptedPath,
+    content: state.pendingEdit.proposedContent
+  });
+  state.workspaceFiles = result.files;
+  state.activeFilePath = acceptedPath;
+  el.activeFileTitle.textContent = acceptedPath;
   el.fileEditorInput.value = state.pendingEdit.proposedContent;
-  clearPendingEdit();
-  toast("Edit accepted");
+  state.pendingEdits.splice(state.activePendingEditIndex, 1);
+  if (state.pendingEdits.length) {
+    showPendingEdits(state.pendingEdits);
+    toast("Edit applied. Review the next one.");
+  } else {
+    clearPendingEdit();
+    renderWorkspace();
+    toast("Edit applied");
+  }
 }
 
 function rejectPendingEdit() {
   if (!state.pendingEdit) return;
   el.fileEditorInput.value = state.pendingEdit.originalContent;
-  clearPendingEdit();
-  toast("Edit rejected");
+  state.pendingEdits.splice(state.activePendingEditIndex, 1);
+  if (state.pendingEdits.length) {
+    showPendingEdits(state.pendingEdits);
+    toast("Edit rejected");
+  } else {
+    clearPendingEdit();
+    toast("Edit rejected");
+  }
 }
 
 async function addModel() {
@@ -1043,10 +1165,15 @@ el.refreshButton.addEventListener("click", refreshAll);
 el.openWorkspaceButton.addEventListener("click", () => openWorkspace().catch((error) => toast(error.message)));
 el.createFileButton.addEventListener("click", () => createWorkspaceFile().catch((error) => toast(error.message)));
 el.saveFileButton.addEventListener("click", () => saveWorkspaceFile().catch((error) => toast(error.message)));
-el.insertFileContextButton.addEventListener("click", insertFileContext);
+el.insertFileContextButton.addEventListener("click", () => insertFileContext().catch((error) => toast(error.message)));
 el.proposeFileEditButton.addEventListener("click", () => proposeFileEdit().catch((error) => toast(error.message)));
-el.acceptEditButton.addEventListener("click", acceptPendingEdit);
+el.acceptEditButton.addEventListener("click", () => acceptPendingEdit().catch((error) => toast(error.message)));
 el.rejectEditButton.addEventListener("click", rejectPendingEdit);
+el.clearContextFilesButton.addEventListener("click", () => {
+  state.selectedContextPaths = [];
+  renderWorkspace();
+});
+el.editProposalInput.addEventListener("change", () => showPendingEditAt(Number(el.editProposalInput.value)));
 el.newThreadButton.addEventListener("click", () => createThread(true).catch((error) => toast(error.message)));
 el.renameThreadButton.addEventListener("click", () => renameCurrentThread().catch((error) => toast(error.message)));
 el.clearThreadButton.addEventListener("click", () => clearCurrentThread().catch((error) => toast(error.message)));
