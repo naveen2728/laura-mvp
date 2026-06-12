@@ -757,6 +757,7 @@ async function sendMessage() {
       body: {
         project_id: Number(el.runProjectInput.value),
         agent_id: Number(el.runAgentInput.value),
+        thread_id: state.remoteThreads ? Number(thread.id) : null,
         prompt
       }
     });

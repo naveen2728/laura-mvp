@@ -126,6 +126,7 @@ def run_agent(
             project_id=payload.project_id,
             agent_id=payload.agent_id,
             prompt=payload.prompt,
+            thread_id=payload.thread_id,
         )
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc

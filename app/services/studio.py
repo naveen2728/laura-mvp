@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.crypto import decrypt_secret, encrypt_secret
-from app.models import AgentRole, ModelProvider, Project, ProviderKind, Task
+from app.models import AgentRole, ChatMessage, ConversationThread, ModelProvider, Project, ProviderKind, Task
 from app.schemas import AgentRoleCreate, AgentRoleUpdate, ModelProviderCreate, ModelProviderUpdate, StudioRunRead
 
 
@@ -138,6 +138,31 @@ def _project_memory_context(db: Session, *, user_id: int, project_id: int) -> tu
     return project, memory
 
 
+def _thread_memory_context(db: Session, *, user_id: int, thread_id: int | None) -> str:
+    if thread_id is None:
+        return ""
+    thread = db.scalar(select(ConversationThread).where(ConversationThread.id == thread_id, ConversationThread.user_id == user_id))
+    if thread is None:
+        raise ValueError("Thread not found")
+
+    messages = list(
+        db.scalars(
+            select(ChatMessage)
+            .where(ChatMessage.thread_id == thread.id)
+            .order_by(ChatMessage.created_at.desc())
+            .limit(12)
+        )
+    )
+    messages.reverse()
+    if not messages:
+        return f"Thread: {thread.title}\nNo prior messages."
+    lines = [
+        f"- {message.label or message.role}: {message.content}"
+        for message in messages
+    ]
+    return "\n".join([f"Thread: {thread.title}", "Recent messages:", *lines])
+
+
 def run_agent(
     db: Session,
     *,
@@ -145,11 +170,14 @@ def run_agent(
     project_id: int,
     agent_id: int,
     prompt: str,
+    thread_id: int | None = None,
 ) -> StudioRunRead | None:
     agent = get_agent_role(db, user_id=user_id, agent_id=agent_id)
     project, memory_context = _project_memory_context(db, user_id=user_id, project_id=project_id)
     if agent is None or project is None or agent.model_provider is None:
         return None
+    thread_context = _thread_memory_context(db, user_id=user_id, thread_id=thread_id)
+    combined_memory_context = "\n\n".join(part for part in [memory_context, thread_context] if part)
 
     provider = agent.model_provider
     if provider.kind not in {ProviderKind.openai_compatible, ProviderKind.openai}:
@@ -164,7 +192,7 @@ def run_agent(
         [
             agent.system_prompt or "You are a helpful coding agent using Laura shared memory.",
             "Use this Laura shared memory as source-of-truth project context.",
-            memory_context,
+            combined_memory_context,
         ]
     )
 
@@ -191,5 +219,5 @@ def run_agent(
         provider_name=provider.name,
         model_name=provider.model_name,
         output=output,
-        memory_context=memory_context,
+        memory_context=combined_memory_context,
     )

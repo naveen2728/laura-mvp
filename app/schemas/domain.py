@@ -150,6 +150,7 @@ class AgentRoleRead(BaseModel):
 class StudioRunCreate(BaseModel):
     project_id: int
     agent_id: int
+    thread_id: int | None = None
     prompt: str = Field(min_length=1)
 
 

@@ -173,6 +173,29 @@ def test_synced_thread_and_message_flow():
     assert list_response.json()[0]["message_count"] == 1
 
 
+def test_thread_history_is_available_to_studio_memory():
+    client = TestClient(app)
+    user_id = client.post("/users", json={"email": "memory@example.com", "name": "Memory"}).json()["id"]
+    api_key = client.post("/api-keys", json={"user_id": user_id, "name": "desktop"}).json()["key"]
+    auth_headers = {"Authorization": f"Bearer {api_key}"}
+    project_id = client.post("/projects", headers=auth_headers, json={"name": "Memory", "description": None}).json()["id"]
+    thread_id = client.post("/threads", headers=auth_headers, json={"title": "Design review", "project_id": project_id}).json()["id"]
+    client.post(
+        f"/threads/{thread_id}/messages",
+        headers=auth_headers,
+        json={"role": "user", "label": "You", "content": "Remember the app should feel like Codex."},
+    )
+
+    from app.db.session import SessionLocal
+    from app.services.studio import _thread_memory_context
+
+    with SessionLocal() as db:
+        memory = _thread_memory_context(db, user_id=user_id, thread_id=thread_id)
+
+    assert "Design review" in memory
+    assert "feel like Codex" in memory
+
+
 @pytest.mark.anyio
 async def test_mcp_token_verifier_returns_user_subject():
     client = TestClient(app)
