@@ -7,7 +7,7 @@ A minimal agentic orchestration platform: FastAPI REST APIs plus a database-back
 - Users, projects, tasks, and API keys in PostgreSQL via SQLAlchemy.
 - Bearer API key auth shared by REST endpoints and MCP tools.
 - Remote MCP endpoint at `http://localhost:8000/mcp`.
-- MCP tools: `list_projects`, `create_project`, `list_tasks`, `create_task`, `update_task_status`.
+- MCP tools: `list_projects`, `create_project`, `list_tasks`, `create_task`, `update_task_status`, `list_threads`, `create_thread`, `list_thread_messages`, `add_thread_message`.
 
 ## Local Setup
 
@@ -84,7 +84,9 @@ From there you can:
 
 ## Laura Desktop
 
-Laura Desktop is an Electron shell for the hosted Laura backend. It gives you a desktop workspace for projects, shared task memory, model providers, agents, and agent runs.
+Laura Desktop is an Electron shell for the hosted Laura MCP backend. It gives you a desktop workspace for projects, shared task memory, MCP connection details, local files, and command output.
+
+Model providers and direct agent runs are optional. Laura's core product is the remote MCP server at `/mcp`, authenticated with your `bm_live_...` API key.
 
 ```powershell
 cd desktop
@@ -98,7 +100,7 @@ Default backend:
 https://web-production-57e37.up.railway.app
 ```
 
-Paste your Laura API key in the desktop app and click `Connect`.
+Paste your Laura API key in the desktop app and click `Connect`. The right rail shows the exact MCP endpoint and Authorization header to paste into Cursor, Claude Desktop, Windsurf, or MCP Inspector.
 
 ## Deployment
 

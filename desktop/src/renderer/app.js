@@ -80,6 +80,7 @@ const el = {
   closeSettingsButton: $("#closeSettingsButton"),
   settingsOverlay: $("#settingsOverlay"),
   configurationSummary: $("#configurationSummary"),
+  mcpConfigPreview: $("#mcpConfigPreview"),
   setupButton: $("#setupButton"),
   setupOverlay: $("#setupOverlay"),
   setupCloseButton: $("#setupCloseButton"),
@@ -441,6 +442,7 @@ async function loadTasks() {
 function render() {
   renderWorkspace();
   renderCommandTools();
+  renderMcpConfig();
   renderThreads();
   renderProjects();
   renderTasks();
@@ -450,6 +452,35 @@ function render() {
   renderRunOptions();
   renderMessages();
   renderMemory();
+}
+
+function mcpEndpoint() {
+  const baseUrl = (state.baseUrl || DEFAULT_BASE_URL).replace(/\/+$/, "");
+  return `${baseUrl}/mcp`;
+}
+
+function renderMcpConfig() {
+  const key = state.apiKey || "bm_live_your_key_here";
+  const cursorConfig = {
+    mcpServers: {
+      laura: {
+        url: mcpEndpoint(),
+        headers: {
+          Authorization: `Bearer ${key}`
+        }
+      }
+    }
+  };
+  el.mcpConfigPreview.textContent = [
+    "Remote MCP endpoint:",
+    mcpEndpoint(),
+    "",
+    "Authorization header:",
+    `Authorization: Bearer ${key}`,
+    "",
+    "Cursor config:",
+    JSON.stringify(cursorConfig, null, 2)
+  ].join("\n");
 }
 
 function renderCommandTools() {
@@ -1299,6 +1330,7 @@ el.connectButton.addEventListener("click", async () => {
   state.apiKey = el.apiKeyInput.value.trim();
   localStorage.setItem("laura_desktop_base_url", state.baseUrl);
   localStorage.setItem("laura_desktop_api_key", state.apiKey);
+  renderMcpConfig();
   await refreshAll();
 });
 el.openSettingsButton.addEventListener("click", openSettings);
@@ -1314,6 +1346,7 @@ el.clearButton.addEventListener("click", () => {
   state.apiKey = "";
   el.apiKeyInput.value = "";
   connected(false);
+  renderMcpConfig();
 });
 el.refreshButton.addEventListener("click", refreshAll);
 el.openWorkspaceButton.addEventListener("click", () => openWorkspace().catch((error) => toast(error.message)));

@@ -557,6 +557,13 @@ select:focus {
   gap: 10px;
 }
 
+.mcp-card pre {
+  color: #d7dde8;
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  font-size: 10px;
+  max-height: 230px;
+}
+
 .summary-card {
   flex: 1;
 }
@@ -772,6 +779,27 @@ pre {
 
 .setup-title {
   margin-bottom: 8px;
+}
+
+.mcp-help-box {
+  background: #10151d;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--soft);
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+}
+
+.mcp-help-box strong {
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.mcp-help-box span {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
 }
 
 .provider-grid {

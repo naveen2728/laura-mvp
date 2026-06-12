@@ -114,6 +114,13 @@
     </main>
 
     <aside class="right-rail">
+      <section class="inspector-card surface mcp-card">
+        <div class="section-title">
+          <span>MCP Server</span>
+        </div>
+        <pre id="mcpConfigPreview">Connect Laura to see MCP config.</pre>
+      </section>
+
       <section class="inspector-card surface">
         <div class="section-title">
           <span>Memory</span>
@@ -226,7 +233,7 @@
         <div class="setup-header">
           <div>
             <p class="eyebrow">Setup</p>
-            <h2>Set up Laura</h2>
+            <h2>Connect Laura MCP</h2>
           </div>
           <button id="setupCloseButton" class="ghost">Close</button>
         </div>
@@ -242,9 +249,14 @@
           </label>
         </div>
 
+        <div class="mcp-help-box">
+          <strong>Laura is the MCP shared context server.</strong>
+          <span>Use this API key as the Bearer token in Cursor, Claude Desktop, Windsurf, or MCP Inspector. Model provider setup below is optional and only needed if you want Laura Desktop to call a model directly.</span>
+        </div>
+
         <div>
           <div class="section-title setup-title">
-            <span>Model provider preset</span>
+            <span>Optional desktop model preset</span>
           </div>
           <div class="provider-grid">
             <button class="provider-card active" data-provider="openrouter">
@@ -283,7 +295,7 @@
         </label>
 
         <div class="setup-actions">
-          <span>Connect Laura, save a model, and create one agent.</span>
+          <span>Connect the MCP server first. Direct model setup is optional.</span>
           <button id="setupSaveButton">Save setup</button>
         </div>
       </section>

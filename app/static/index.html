@@ -91,9 +91,9 @@
       <section class="panel studio-panel">
         <div class="panel-header">
           <div>
-            <p class="eyebrow">Studio</p>
+            <p class="eyebrow">Optional Studio</p>
             <h2>Models</h2>
-            <p>Add OpenAI-compatible, Kimi, Claude, Gemini, OpenRouter, or local model endpoints.</p>
+            <p>Only add model endpoints if you want Laura itself to run prompts. MCP clients can use Laura without this.</p>
           </div>
           <button id="refreshStudioButton" type="button" class="secondary">Refresh</button>
         </div>
@@ -137,9 +137,9 @@
       <section class="panel studio-panel">
         <div class="panel-header">
           <div>
-            <p class="eyebrow">Orchestration</p>
+            <p class="eyebrow">Optional Studio</p>
             <h2>Agents</h2>
-            <p>Assign models to roles so Laura can coordinate specialist agents later.</p>
+            <p>Optional direct-run agents. Your main shared memory tools are available over the MCP endpoint.</p>
           </div>
         </div>
         <form id="agentForm" class="stack">
@@ -171,9 +171,9 @@
       <section class="panel studio-panel run-panel">
         <div class="panel-header">
           <div>
-            <p class="eyebrow">Run</p>
+            <p class="eyebrow">Optional Studio</p>
             <h2>Agent Chat</h2>
-            <p>Send a prompt to a selected agent with Laura project memory attached.</p>
+            <p>Use this only if Laura should call a model directly. Cursor, Claude, and Windsurf connect through MCP.</p>
           </div>
         </div>
         <form id="runForm" class="stack">
