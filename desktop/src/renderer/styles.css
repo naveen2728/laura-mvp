@@ -273,6 +273,23 @@ select:focus {
   overflow: hidden;
 }
 
+.files-section {
+  max-height: 220px;
+  overflow: hidden;
+}
+
+.files-section .file-list {
+  max-height: 150px;
+  overflow: auto;
+}
+
+.new-file-row {
+  display: grid;
+  gap: 6px;
+  grid-template-columns: 1fr auto;
+  margin-bottom: 7px;
+}
+
 .tasks-section .stack-list {
   max-height: 34vh;
   overflow: auto;
@@ -290,6 +307,11 @@ select:focus {
   background: #202632;
   border-color: #455064;
   box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.file-item h4 {
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  font-size: 11px;
 }
 
 .item-title {
@@ -479,6 +501,28 @@ select:focus {
 
 .summary-card {
   flex: 1;
+}
+
+.file-editor-card {
+  min-height: 260px;
+}
+
+.file-editor {
+  flex: 1;
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  font-size: 11px;
+  min-height: 190px;
+  resize: vertical;
+  white-space: pre;
+}
+
+.muted-line {
+  color: var(--muted);
+  font-size: 11px;
+  margin: 0 0 7px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .summary-item {

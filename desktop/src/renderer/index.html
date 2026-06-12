@@ -38,6 +38,19 @@
         <div id="threadList" class="stack-list"></div>
       </section>
 
+      <section class="sidebar-section surface files-section">
+        <div class="section-title">
+          <span>Files</span>
+          <button id="openWorkspaceButton" class="icon-button" title="Open folder">Open</button>
+        </div>
+        <p id="workspaceRootLabel" class="muted-line">No folder selected</p>
+        <div class="new-file-row">
+          <input id="newFilePathInput" placeholder="path/to/file.txt" />
+          <button id="createFileButton" class="icon-button">Create</button>
+        </div>
+        <div id="fileList" class="stack-list file-list"></div>
+      </section>
+
       <section class="sidebar-section surface">
         <div class="section-title">
           <span>Projects</span>
@@ -99,6 +112,15 @@
           <button id="openSettingsButton" class="icon-button">Settings</button>
         </div>
         <pre id="memoryPreview">Connect and select a project to see Laura memory.</pre>
+      </section>
+
+      <section class="inspector-card surface file-editor-card">
+        <div class="section-title">
+          <span id="activeFileTitle">File</span>
+          <button id="saveFileButton" class="icon-button">Save</button>
+        </div>
+        <textarea id="fileEditorInput" class="file-editor" spellcheck="false" placeholder="Open a workspace file"></textarea>
+        <button id="insertFileContextButton" class="ghost setup-link">Insert into prompt</button>
       </section>
 
       <section class="inspector-card surface summary-card">

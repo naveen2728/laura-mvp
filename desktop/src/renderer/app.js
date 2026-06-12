@@ -39,6 +39,9 @@ const state = {
   selectedThreadId: localStorage.getItem("laura_desktop_selected_thread") || null,
   threads: JSON.parse(localStorage.getItem("laura_desktop_threads") || "[]"),
   remoteThreads: false,
+  workspaceRoot: null,
+  workspaceFiles: [],
+  activeFilePath: null,
   lastMemory: ""
 };
 
@@ -78,6 +81,15 @@ const el = {
   setupModelNameInput: $("#setupModelNameInput"),
   setupAgentPromptInput: $("#setupAgentPromptInput"),
   refreshButton: $("#refreshButton"),
+  openWorkspaceButton: $("#openWorkspaceButton"),
+  workspaceRootLabel: $("#workspaceRootLabel"),
+  newFilePathInput: $("#newFilePathInput"),
+  createFileButton: $("#createFileButton"),
+  fileList: $("#fileList"),
+  activeFileTitle: $("#activeFileTitle"),
+  fileEditorInput: $("#fileEditorInput"),
+  saveFileButton: $("#saveFileButton"),
+  insertFileContextButton: $("#insertFileContextButton"),
   newThreadButton: $("#newThreadButton"),
   threadList: $("#threadList"),
   projectList: $("#projectList"),
@@ -400,6 +412,7 @@ async function loadTasks() {
 }
 
 function render() {
+  renderWorkspace();
   renderThreads();
   renderProjects();
   renderTasks();
@@ -409,6 +422,22 @@ function render() {
   renderRunOptions();
   renderMessages();
   renderMemory();
+}
+
+function renderWorkspace() {
+  el.workspaceRootLabel.textContent = state.workspaceRoot || "No folder selected";
+  el.fileList.innerHTML = "";
+  if (!state.workspaceFiles.length) {
+    el.fileList.innerHTML = '<article class="item"><p>No files loaded.</p></article>';
+    return;
+  }
+  for (const file of state.workspaceFiles) {
+    const item = document.createElement("article");
+    item.className = `item file-item ${file === state.activeFilePath ? "active" : ""}`;
+    item.innerHTML = `<div class="item-title"><h4>${escapeHtml(file)}</h4></div>`;
+    item.addEventListener("click", () => openWorkspaceFile(file).catch((error) => toast(error.message)));
+    el.fileList.appendChild(item);
+  }
 }
 
 function renderConfigurationSummary() {
@@ -658,6 +687,59 @@ async function createTask() {
   await refreshAll();
 }
 
+async function openWorkspace() {
+  const workspace = await window.lauraDesktop.openWorkspace();
+  if (!workspace) return;
+  state.workspaceRoot = workspace.root;
+  state.workspaceFiles = workspace.files;
+  state.activeFilePath = null;
+  el.fileEditorInput.value = "";
+  el.activeFileTitle.textContent = "File";
+  renderWorkspace();
+  toast("Workspace opened");
+}
+
+async function openWorkspaceFile(filePath) {
+  const file = await window.lauraDesktop.readFile(filePath);
+  state.activeFilePath = file.path;
+  el.activeFileTitle.textContent = file.path;
+  el.fileEditorInput.value = file.content;
+  renderWorkspace();
+}
+
+async function saveWorkspaceFile() {
+  if (!state.activeFilePath) return toast("Open a file first");
+  const result = await window.lauraDesktop.writeFile({
+    path: state.activeFilePath,
+    content: el.fileEditorInput.value
+  });
+  state.workspaceFiles = result.files;
+  renderWorkspace();
+  toast("File saved");
+}
+
+async function createWorkspaceFile() {
+  const filePath = el.newFilePathInput.value.trim();
+  if (!filePath) return toast("Enter a file path");
+  const result = await window.lauraDesktop.writeFile({ path: filePath, content: "" });
+  state.workspaceFiles = result.files;
+  el.newFilePathInput.value = "";
+  await openWorkspaceFile(filePath);
+  toast("File created");
+}
+
+function insertFileContext() {
+  if (!state.activeFilePath) return toast("Open a file first");
+  const snippet = [
+    `File: ${state.activeFilePath}`,
+    "```",
+    el.fileEditorInput.value,
+    "```",
+  ].join("\n");
+  el.composerInput.value = `${el.composerInput.value.trim()}\n\n${snippet}`.trim();
+  el.composerInput.focus();
+}
+
 async function addModel() {
   await request("/studio/models", {
     method: "POST",
@@ -842,6 +924,10 @@ el.clearButton.addEventListener("click", () => {
   connected(false);
 });
 el.refreshButton.addEventListener("click", refreshAll);
+el.openWorkspaceButton.addEventListener("click", () => openWorkspace().catch((error) => toast(error.message)));
+el.createFileButton.addEventListener("click", () => createWorkspaceFile().catch((error) => toast(error.message)));
+el.saveFileButton.addEventListener("click", () => saveWorkspaceFile().catch((error) => toast(error.message)));
+el.insertFileContextButton.addEventListener("click", insertFileContext);
 el.newThreadButton.addEventListener("click", () => createThread(true).catch((error) => toast(error.message)));
 el.renameThreadButton.addEventListener("click", () => renameCurrentThread().catch((error) => toast(error.message)));
 el.clearThreadButton.addEventListener("click", () => clearCurrentThread().catch((error) => toast(error.message)));
