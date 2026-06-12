@@ -47,6 +47,7 @@ const state = {
   pendingEdit: null,
   pendingEdits: [],
   activePendingEditIndex: 0,
+  commandRunning: false,
   lastMemory: ""
 };
 
@@ -105,6 +106,9 @@ const el = {
   saveFileButton: $("#saveFileButton"),
   insertFileContextButton: $("#insertFileContextButton"),
   proposeFileEditButton: $("#proposeFileEditButton"),
+  commandInput: $("#commandInput"),
+  runCommandButton: $("#runCommandButton"),
+  commandOutput: $("#commandOutput"),
   newThreadButton: $("#newThreadButton"),
   threadList: $("#threadList"),
   projectList: $("#projectList"),
@@ -993,6 +997,36 @@ async function acceptPendingEdit() {
   }
 }
 
+async function runWorkspaceCommand() {
+  if (state.commandRunning) return;
+  const command = el.commandInput.value.trim();
+  if (!command) return toast("Enter a command");
+  state.commandRunning = true;
+  el.runCommandButton.disabled = true;
+  el.runCommandButton.textContent = "Running";
+  el.commandOutput.textContent = `> ${command}\n\nRunning...`;
+
+  try {
+    const result = await window.lauraDesktop.runCommand({ command });
+    const sections = [
+      `> ${result.command}`,
+      `exit ${result.exitCode}`,
+      result.stdout ? `\nstdout\n${result.stdout.trimEnd()}` : "",
+      result.stderr ? `\nstderr\n${result.stderr.trimEnd()}` : ""
+    ].filter(Boolean);
+    el.commandOutput.textContent = sections.join("\n");
+    if (result.exitCode === 0) {
+      toast("Command finished");
+    } else {
+      toast(`Command exited ${result.exitCode}`);
+    }
+  } finally {
+    state.commandRunning = false;
+    el.runCommandButton.disabled = false;
+    el.runCommandButton.textContent = "Run";
+  }
+}
+
 function rejectPendingEdit() {
   if (!state.pendingEdit) return;
   el.fileEditorInput.value = state.pendingEdit.originalContent;
@@ -1202,6 +1236,13 @@ el.insertFileContextButton.addEventListener("click", () => insertFileContext().c
 el.proposeFileEditButton.addEventListener("click", () => proposeFileEdit().catch((error) => toast(error.message)));
 el.acceptEditButton.addEventListener("click", () => acceptPendingEdit().catch((error) => toast(error.message)));
 el.rejectEditButton.addEventListener("click", rejectPendingEdit);
+el.runCommandButton.addEventListener("click", () => runWorkspaceCommand().catch((error) => toast(error.message)));
+el.commandInput.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    runWorkspaceCommand().catch((error) => toast(error.message));
+  }
+});
 el.clearContextFilesButton.addEventListener("click", () => {
   state.selectedContextPaths = [];
   renderWorkspace();

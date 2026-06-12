@@ -5,5 +5,6 @@ contextBridge.exposeInMainWorld("lauraDesktop", {
   openWorkspace: () => ipcRenderer.invoke("laura:workspace:open"),
   listWorkspace: () => ipcRenderer.invoke("laura:workspace:list"),
   readFile: (relativePath) => ipcRenderer.invoke("laura:workspace:read", relativePath),
-  writeFile: (payload) => ipcRenderer.invoke("laura:workspace:write", payload)
+  writeFile: (payload) => ipcRenderer.invoke("laura:workspace:write", payload),
+  runCommand: (payload) => ipcRenderer.invoke("laura:workspace:run", payload)
 });

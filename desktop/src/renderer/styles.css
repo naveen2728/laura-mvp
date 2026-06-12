@@ -561,6 +561,17 @@ select:focus {
   flex: 1;
 }
 
+.terminal-card {
+  min-height: 190px;
+}
+
+.terminal-card pre {
+  color: #d7dde8;
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  font-size: 11px;
+  max-height: 210px;
+}
+
 .file-editor-card {
   min-height: 260px;
 }

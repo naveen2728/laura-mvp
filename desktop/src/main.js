@@ -1,9 +1,12 @@
 const { app, BrowserWindow, dialog, ipcMain, shell } = require("electron");
+const { execFile } = require("node:child_process");
 const fs = require("node:fs/promises");
 const path = require("node:path");
+const { promisify } = require("node:util");
 
 const DEFAULT_BASE_URL = "https://web-production-57e37.up.railway.app";
 const IGNORED_DIRS = new Set([".git", "node_modules", ".venv", "venv", "__pycache__", "dist", "release"]);
+const execFileAsync = promisify(execFile);
 
 let workspaceRoot = null;
 
@@ -122,6 +125,40 @@ ipcMain.handle("laura:workspace:write", async (_event, payload) => {
   await fs.writeFile(target, payload.content ?? "", "utf8");
   const files = await collectFiles(workspaceRoot, workspaceRoot);
   return { path: payload.path, files };
+});
+
+ipcMain.handle("laura:workspace:run", async (_event, payload) => {
+  if (!workspaceRoot) throw new Error("Open a workspace first");
+  const command = String(payload.command || "").trim();
+  if (!command) throw new Error("Enter a command");
+
+  const isWindows = process.platform === "win32";
+  const shellCommand = isWindows ? "powershell.exe" : "sh";
+  const shellArgs = isWindows
+    ? ["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", command]
+    : ["-lc", command];
+
+  try {
+    const result = await execFileAsync(shellCommand, shellArgs, {
+      cwd: workspaceRoot,
+      timeout: 120000,
+      maxBuffer: 1024 * 1024 * 4,
+      windowsHide: true
+    });
+    return {
+      command,
+      exitCode: 0,
+      stdout: result.stdout || "",
+      stderr: result.stderr || ""
+    };
+  } catch (error) {
+    return {
+      command,
+      exitCode: typeof error.code === "number" ? error.code : 1,
+      stdout: error.stdout || "",
+      stderr: error.stderr || error.message
+    };
+  }
 });
 
 app.whenReady().then(createWindow);
