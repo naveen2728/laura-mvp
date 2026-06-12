@@ -7,7 +7,7 @@
   "scripts": {
     "start": "electron .",
     "check": "node --check src/main.js && node --check src/preload.js && node --check src/renderer/app.js",
-    "dist": "electron-builder --win nsis"
+    "dist": "electron-builder --win portable dir"
   },
   "build": {
     "appId": "ai.laura.desktop",
@@ -21,8 +21,14 @@
     ],
     "icon": "src/assets/icon.ico",
     "win": {
-      "target": "nsis",
+      "target": [
+        "portable",
+        "dir"
+      ],
       "icon": "src/assets/icon.ico"
+    },
+    "portable": {
+      "artifactName": "Laura Portable ${version}.${ext}"
     },
     "nsis": {
       "oneClick": false,
