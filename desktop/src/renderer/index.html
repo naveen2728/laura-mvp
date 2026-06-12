@@ -12,7 +12,7 @@
         <div class="brand-mark">L</div>
         <div>
           <h1>Laura</h1>
-          <p>Agent workspace</p>
+          <p>Workspace</p>
         </div>
       </header>
 
@@ -27,7 +27,7 @@
           <button id="connectButton">Connect</button>
           <button id="clearButton" class="ghost">Clear</button>
         </div>
-        <button id="setupButton" class="ghost setup-link">Setup guide</button>
+        <button id="setupButton" class="ghost setup-link">Setup</button>
       </section>
 
       <section class="sidebar-section surface">
@@ -67,7 +67,7 @@
     <main class="chat-shell">
       <header class="chat-header">
         <div>
-          <p class="eyebrow">Shared context thread</p>
+          <p class="eyebrow">Thread</p>
           <h2 id="threadTitle">Laura Composer</h2>
           <div class="thread-actions">
             <button id="renameThreadButton" class="ghost">Rename</button>
@@ -84,9 +84,9 @@
       <section id="messageList" class="message-list" aria-live="polite"></section>
 
       <footer class="composer">
-        <textarea id="composerInput" rows="4" placeholder="Ask Laura to plan, summarize, debug, or hand work to the selected agent..."></textarea>
+        <textarea id="composerInput" rows="4" placeholder="Message Laura"></textarea>
         <div class="composer-actions">
-          <span id="composerHint">Ctrl + Enter to send. Project memory is attached automatically.</span>
+          <span id="composerHint">Ctrl + Enter to send</span>
           <button id="runAgentButton">Send</button>
         </div>
       </footer>
@@ -95,7 +95,7 @@
     <aside class="right-rail">
       <section class="inspector-card surface">
         <div class="section-title">
-          <span>Memory Used</span>
+          <span>Memory</span>
           <button id="openSettingsButton" class="icon-button">Settings</button>
         </div>
         <pre id="memoryPreview">Connect and select a project to see Laura memory.</pre>
@@ -103,7 +103,7 @@
 
       <section class="inspector-card surface summary-card">
         <div class="section-title">
-          <span>Configured</span>
+          <span>Status</span>
         </div>
         <div id="configurationSummary" class="summary-list"></div>
       </section>
@@ -114,7 +114,7 @@
       <section class="settings-modal surface">
         <div class="setup-header">
           <div>
-            <p class="eyebrow">Workspace settings</p>
+            <p class="eyebrow">Settings</p>
             <h2>Models and agents</h2>
           </div>
           <button id="closeSettingsButton" class="ghost">Close</button>
@@ -163,7 +163,7 @@
       <section class="setup-modal surface">
         <div class="setup-header">
           <div>
-            <p class="eyebrow">First run</p>
+            <p class="eyebrow">Setup</p>
             <h2>Set up Laura</h2>
           </div>
           <button id="setupCloseButton" class="ghost">Close</button>
@@ -221,7 +221,7 @@
         </label>
 
         <div class="setup-actions">
-          <span>Laura will connect, save the model, and create a default agent.</span>
+          <span>Connect Laura, save a model, and create one agent.</span>
           <button id="setupSaveButton">Save setup</button>
         </div>
       </section>
