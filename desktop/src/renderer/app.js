@@ -105,6 +105,7 @@ const el = {
   diffPreview: $("#diffPreview"),
   editProposalInput: $("#editProposalInput"),
   acceptEditButton: $("#acceptEditButton"),
+  acceptAllEditsButton: $("#acceptAllEditsButton"),
   rejectEditButton: $("#rejectEditButton"),
   saveFileButton: $("#saveFileButton"),
   insertFileContextButton: $("#insertFileContextButton"),
@@ -1027,6 +1028,27 @@ async function acceptPendingEdit() {
   }
 }
 
+async function acceptAllPendingEdits() {
+  if (!state.pendingEdits.length) return;
+  const edits = [...state.pendingEdits];
+  let latestFiles = state.workspaceFiles;
+  for (const edit of edits) {
+    const result = await window.lauraDesktop.writeFile({
+      path: edit.path,
+      content: edit.proposedContent
+    });
+    latestFiles = result.files;
+  }
+  const lastEdit = edits[edits.length - 1];
+  state.workspaceFiles = latestFiles;
+  state.activeFilePath = lastEdit.path;
+  el.activeFileTitle.textContent = lastEdit.path;
+  el.fileEditorInput.value = lastEdit.proposedContent;
+  clearPendingEdit();
+  renderWorkspace();
+  toast(`Applied ${edits.length} edit${edits.length === 1 ? "" : "s"}`);
+}
+
 async function runWorkspaceCommand() {
   if (state.commandRunning) return;
   const command = el.commandInput.value.trim();
@@ -1291,6 +1313,7 @@ el.saveFileButton.addEventListener("click", () => saveWorkspaceFile().catch((err
 el.insertFileContextButton.addEventListener("click", () => insertFileContext().catch((error) => toast(error.message)));
 el.proposeFileEditButton.addEventListener("click", () => proposeFileEdit().catch((error) => toast(error.message)));
 el.acceptEditButton.addEventListener("click", () => acceptPendingEdit().catch((error) => toast(error.message)));
+el.acceptAllEditsButton.addEventListener("click", () => acceptAllPendingEdits().catch((error) => toast(error.message)));
 el.rejectEditButton.addEventListener("click", rejectPendingEdit);
 el.runCommandButton.addEventListener("click", () => runWorkspaceCommand().catch((error) => toast(error.message)));
 el.insertCommandOutputButton.addEventListener("click", insertCommandOutput);
