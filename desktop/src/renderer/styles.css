@@ -569,6 +569,12 @@ select:focus {
   width: 100%;
 }
 
+.command-actions {
+  display: grid;
+  gap: 6px;
+  grid-template-columns: 1fr 1fr;
+}
+
 .command-presets {
   display: grid;
   gap: 5px;

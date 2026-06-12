@@ -115,6 +115,7 @@ const el = {
   commandHistoryInput: $("#commandHistoryInput"),
   runCommandButton: $("#runCommandButton"),
   insertCommandOutputButton: $("#insertCommandOutputButton"),
+  askCommandOutputButton: $("#askCommandOutputButton"),
   commandOutput: $("#commandOutput"),
   newThreadButton: $("#newThreadButton"),
   threadList: $("#threadList"),
@@ -1087,10 +1088,10 @@ function saveCommandHistory(command) {
   renderCommandTools();
 }
 
-function insertCommandOutput() {
+function formatCommandOutputPrompt() {
   if (!state.lastCommandResult) return toast("Run a command first");
   const result = state.lastCommandResult;
-  const snippet = [
+  return [
     "Command output:",
     "```",
     `> ${result.command}`,
@@ -1101,8 +1102,19 @@ function insertCommandOutput() {
     "",
     result.exitCode === 0 ? "Summarize this result." : "Explain why this failed and propose a fix."
   ].filter((line) => line !== "").join("\n");
+}
+
+function insertCommandOutput() {
+  const snippet = formatCommandOutputPrompt();
+  if (!snippet) return;
   el.composerInput.value = `${el.composerInput.value.trim()}\n\n${snippet}`.trim();
   el.composerInput.focus();
+}
+
+async function askAboutCommandOutput() {
+  const prompt = formatCommandOutputPrompt();
+  if (!prompt) return;
+  await sendMessage(prompt);
 }
 
 function rejectPendingEdit() {
@@ -1186,8 +1198,8 @@ async function saveSetup() {
   await refreshAll();
 }
 
-async function sendMessage() {
-  const prompt = el.composerInput.value.trim();
+async function sendMessage(preparedPrompt) {
+  const prompt = (preparedPrompt || el.composerInput.value).trim();
   if (!prompt) return;
   if (!el.runProjectInput.value || !el.runAgentInput.value) {
     toast("Choose a project and agent first");
@@ -1206,7 +1218,9 @@ async function sendMessage() {
       body: { role: "user", label: "You", content: prompt }
     });
   }
-  el.composerInput.value = "";
+  if (!preparedPrompt) {
+    el.composerInput.value = "";
+  }
   const thread = currentThread();
   const pendingIndex = thread.messages.length;
   addMessage("assistant", "Working...", "Laura");
@@ -1317,6 +1331,7 @@ el.acceptAllEditsButton.addEventListener("click", () => acceptAllPendingEdits().
 el.rejectEditButton.addEventListener("click", rejectPendingEdit);
 el.runCommandButton.addEventListener("click", () => runWorkspaceCommand().catch((error) => toast(error.message)));
 el.insertCommandOutputButton.addEventListener("click", insertCommandOutput);
+el.askCommandOutputButton.addEventListener("click", () => askAboutCommandOutput().catch((error) => toast(error.message)));
 el.commandHistoryInput.addEventListener("change", () => {
   if (!el.commandHistoryInput.value) return;
   el.commandInput.value = el.commandHistoryInput.value;
